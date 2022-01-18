@@ -210,6 +210,7 @@ bool optionExists(const std::string &option, int argc, char **argv, std::string 
 
 int main(int argc, char **argv)
 {
+
     std::string infile;
     std::string svgdir;
     std::string outfile;
