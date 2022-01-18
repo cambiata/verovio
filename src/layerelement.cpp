@@ -2405,6 +2405,13 @@ int LayerElement::CalcOnsetOffset(FunctorParams *functorParams)
         incrementScoreTime = element->GetAlignmentDuration(
             params->m_currentMensur, params->m_currentMeterSig, true, params->m_notationType);
         incrementScoreTime = incrementScoreTime / (DUR_MAX / DURATION_4);
+
+        element->m_scoreTimeOnset = params->m_currentScoreTime;        
+        element->m_scoreTimeOffset = params->m_currentScoreTime + incrementScoreTime;        
+        element->m_realTimeOnsetMilliseconds = params->m_currentRealTimeSeconds * 1000.0;
+        double realTimeIncrementSeconds = incrementScoreTime * 60.0 / params->m_currentTempo;
+        element->m_realTimeOffsetMilliseconds = (params->m_currentRealTimeSeconds + realTimeIncrementSeconds) * 1000.0;
+
         params->m_currentScoreTime += incrementScoreTime;
         params->m_currentRealTimeSeconds += incrementScoreTime * 60.0 / params->m_currentTempo;
     }

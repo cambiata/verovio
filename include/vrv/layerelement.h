@@ -495,6 +495,17 @@ private:
      * This also stores the negative values for identifying cross-staff
      */
     int m_alignmentLayerN;
+
+private: 
+    /**
+     * Store timemap data for all layer elements (copied from - and redundant with! - note.h)
+    */
+    double m_scoreTimeOnset;
+    double m_scoreTimeOffset;
+    double m_realTimeOnsetMilliseconds;
+    double m_realTimeOffsetMilliseconds;
+
+
 };
 
 } // namespace vrv
