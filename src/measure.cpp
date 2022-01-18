@@ -1547,6 +1547,11 @@ int Measure::GenerateTimemap(FunctorParams *functorParams)
     params->m_realTimeOffsetMilliseconds = m_realTimeOffsetMilliseconds.back();
     params->m_currentTempo = m_currentTempo;
 
+    double scoreTimeStart = params->m_scoreTimeOffset;    
+    double realTimeStart = params->m_realTimeOffsetMilliseconds;
+    params->realTimeToScoreTime[realTimeStart] = scoreTimeStart;
+    params->realTimeToOnElements[realTimeStart].push_back(this->GetUuid());
+
     return FUNCTOR_CONTINUE;
 }
 
