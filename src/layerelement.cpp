@@ -2513,6 +2513,21 @@ int LayerElement::GenerateTimemap(FunctorParams *functorParams)
 
     if (this->IsScoreDefElement()) return FUNCTOR_SIBLINGS;
 
+    LayerElement *element = this->ThisOrSameasAsLink();
+    if (element->Is(REST) || element->Is(SPACE)) {
+        double scoreTimeStart = params->m_scoreTimeOffset + element->m_scoreTimeOnset;
+        double scoreTimeEnd = params->m_scoreTimeOffset + element->m_scoreTimeOffset;
+        double realTimeStart = params->m_realTimeOffsetMilliseconds + element->m_realTimeOnsetMilliseconds;
+        double realTimeEnd = params->m_realTimeOffsetMilliseconds + element->m_realTimeOffsetMilliseconds;
+        params->realTimeToScoreTime[realTimeStart] = scoreTimeStart;
+        params->realTimeToOnElements[realTimeStart].push_back(this->GetUuid());
+        params->realTimeToScoreTime[realTimeEnd] = scoreTimeEnd;
+        params->realTimeToOffElements[realTimeEnd].push_back(this->GetUuid());
+        params->realTimeToTempo[realTimeStart] = params->m_currentTempo;
+    } else {
+        //std::cout << "GenerateTimemap neither REST nor SPACE" << std::endl;
+    }
+
     // Only resolve simple sameas links to avoid infinite recursion
     LayerElement *sameas = dynamic_cast<LayerElement *>(this->GetSameasLink());
     if (sameas && !sameas->HasSameasLink()) {
