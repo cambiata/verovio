@@ -413,7 +413,8 @@ void View::DrawStaffDefLabels(DeviceContext *dc, Measure *measure, StaffGrp *sta
         int y = staff->GetDrawingY()
             - (staffDef->GetLines() * m_doc->GetDrawingDoubleUnit(staff->m_drawingStaffSize) / 2);
 
-        this->DrawLabels(dc, scoreDef, staffDef, x - space, y, abbreviations, staff->m_drawingStaffSize, 2 * space);
+        const int staffSize = staff->GetDrawingStaffNotationSize();
+        this->DrawLabels(dc, scoreDef, staffDef, x - space, y, abbreviations, staffSize, 2 * space);
     }
 }
 
@@ -834,7 +835,7 @@ void View::DrawBarLine(
     assert(dc);
     assert(barLine);
 
-    Staff *staff = dynamic_cast<Staff *>(barLine->GetFirstAncestor(STAFF));
+    Staff *staff = barLine->GetAncestorStaff(ANCESTOR_ONLY, false);
     const int staffSize = (staff) ? staff->m_drawingStaffSize : 100;
 
     const int x = barLine->GetDrawingX();
@@ -1224,8 +1225,7 @@ void View::DrawStaffLines(DeviceContext *dc, Staff *staff, Measure *measure, Sys
             y2 -= m_doc->GetDrawingDoubleUnit(staff->m_drawingStaffSize);
         }
         else {
-            const bool isFrenchOrItalianTablature = (staff->m_drawingNotationType == NOTATIONTYPE_tab_lute_french
-                || staff->m_drawingNotationType == NOTATIONTYPE_tab_lute_italian);
+            const bool isFrenchOrItalianTablature = (staff->IsTabLuteFrench() || staff->IsTabLuteItalian());
             SegmentedLine line(x1, x2);
             // We do not need to do this during layout calculation - and only with tablature but not for French or
             // Italian tablature
