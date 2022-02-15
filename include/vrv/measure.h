@@ -544,6 +544,11 @@ private:
     double m_currentTempo;
 
     std::map<int, BarlineRenditionPair> m_invisibleStaffBarlines;
+
+private:
+    double mx_scoreTimeIncrement;
+    double mx_realTimeIncrementMilliseconds;
+
 };
 
 } // namespace vrv

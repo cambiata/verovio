@@ -1548,15 +1548,35 @@ int Measure::GenerateTimemap(FunctorParams *functorParams)
     GenerateTimemapParams *params = vrv_params_cast<GenerateTimemapParams *>(functorParams);
     assert(params);
 
+
+    Measure *measure = vrv_cast<Measure *>(this);
+    assert(note);
+    // std::cout << measure << std::endl;
+    // std::cout << this << std::endl;
+    // std::cout << m_scoreTimeOffset.size() << std::endl;
+    
+
     // Deal with repeated music later, for now get the last times.
+
+
     params->m_scoreTimeOffset = m_scoreTimeOffset.back();
     params->m_realTimeOffsetMilliseconds = m_realTimeOffsetMilliseconds.back();
     params->m_currentTempo = m_currentTempo;
 
     double scoreTimeStart = params->m_scoreTimeOffset;    
-    double realTimeStart = params->m_realTimeOffsetMilliseconds;
+    double scoreTimeEnd = scoreTimeStart + measure->mx_scoreTimeIncrement;
+
+    // std::cout << scoreTimeStart << "/" << scoreTimeEnd <<"/" << measure->mx_scoreTimeIncrement <<  std::endl;
+
+    double realTimeStart = params->m_realTimeOffsetMilliseconds;    
+    // double realTimeEnd = params->m_realTimeOffsetMilliseconds + measure->m_realTimeOffsetMilliseconds[0];
+    double realTimeEnd = realTimeStart + measure->mx_realTimeIncrementMilliseconds;
+
     params->realTimeToScoreTime[realTimeStart] = scoreTimeStart;
-    params->realTimeToOnElements[realTimeStart].push_back(this->GetUuid());
+    params->realTimeToOnElements[realTimeStart].push_back(this->GetUuid());    
+    
+    params->realTimeToScoreTime[realTimeEnd] = scoreTimeEnd;
+    params->realTimeToOffElements[realTimeEnd].push_back(this->GetUuid());
 
     return FUNCTOR_CONTINUE;
 }
@@ -1568,7 +1588,6 @@ int Measure::CalcMaxMeasureDuration(FunctorParams *functorParams)
 
     m_scoreTimeOffset.clear();
     m_scoreTimeOffset.push_back(params->m_currentScoreTime);
-
     m_realTimeOffsetMilliseconds.clear();
     // m_realTimeOffsetMilliseconds.push_back(int(params->m_maxCurrentRealTimeSeconds * 1000.0 + 0.5));
     m_realTimeOffsetMilliseconds.push_back(params->m_currentRealTimeSeconds * 1000.0);
@@ -1587,6 +1606,10 @@ int Measure::CalcMaxMeasureDurationEnd(FunctorParams *functorParams)
     params->m_currentScoreTime += scoreTimeIncrement;
     params->m_currentRealTimeSeconds += scoreTimeIncrement * 60.0 / m_currentTempo;
     params->m_multiRestFactor = 1;
+
+    // std::cout << "scoreTimeIncrement: "<< scoreTimeIncrement <<std::endl;
+    this->mx_scoreTimeIncrement = scoreTimeIncrement;
+    this->mx_realTimeIncrementMilliseconds = (scoreTimeIncrement * 60.0 / m_currentTempo) * 1000;
 
     return FUNCTOR_CONTINUE;
 }
