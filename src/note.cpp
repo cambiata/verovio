@@ -52,7 +52,12 @@ namespace vrv
     static const ClassRegistrar<Note> s_factory("note", NOTE);
 
     Note::Note()
-        : LayerElement(NOTE, "note-"), StemmedDrawingInterface(), DurationInterface(), PitchInterface(), PositionInterface(), AttColor(), AttColoration(), AttCue(), AttExtSym(), AttGraced(), AttMidiVelocity(), AttNoteGesTab(), AttNoteHeads(), AttNoteVisMensural(), AttStems(), AttStemsCmn(), AttTiePresent(), AttVisibility()
+        : LayerElement(NOTE, "note-"),
+          StemmedDrawingInterface(),
+          DurationInterface(),
+          PitchInterface(),
+          PositionInterface(),
+          AttColor(), AttColoration(), AttCue(), AttExtSym(), AttGraced(), AttMidiVelocity(), AttNoteGesTab(), AttNoteHeads(), AttNoteVisMensural(), AttStems(), AttStemsCmn(), AttTiePresent(), AttVisibility()
     {
         this->RegisterInterface(DurationInterface::GetAttClasses(), DurationInterface::IsInterface());
         this->RegisterInterface(PitchInterface::GetAttClasses(), PitchInterface::IsInterface());
@@ -1763,7 +1768,7 @@ namespace vrv
         Note *note = vrv_cast<Note *>(this->ThisOrSameasLink());
         assert(note);
 
-        std::cout << "Timemap NOTE" << std::endl;
+        // std::cout << "Note::GenerateTimemap" << std::endl;
 
         params->m_timemap->AddEntry(note, params);
 

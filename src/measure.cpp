@@ -55,7 +55,8 @@ namespace vrv
     static const ClassRegistrar<Measure> s_factory("measure", MEASURE);
 
     Measure::Measure(bool measureMusic, int logMeasureNb)
-        : Object(MEASURE, "measure-"), AttBarring(), AttCoordX1(), AttCoordX2(), AttMeasureLog(), AttMeterConformanceBar(), AttNNumberLike(), AttPointing(), AttTyped()
+        : Object(MEASURE, "measure-"),
+          AttBarring(), AttCoordX1(), AttCoordX2(), AttMeasureLog(), AttMeterConformanceBar(), AttNNumberLike(), AttPointing(), AttTyped()
     {
         this->RegisterAttClass(ATT_BARRING);
         this->RegisterAttClass(ATT_COORDX1);
@@ -1768,11 +1769,6 @@ namespace vrv
         params->m_currentTempo = this->m_currentTempo;
 
         params->m_timemap->AddEntry(this, params);
-
-        double scoreTimeStart = params->m_scoreTimeOffset;                              // Jonas
-        double scoreTimeEnd = scoreTimeStart + measure->mx_scoreTimeIncrement;          // Jonas
-        double realTimeStart = params->m_realTimeOffsetMilliseconds;                    // Jonas
-        double realTimeEnd = realTimeStart + measure->mx_realTimeIncrementMilliseconds; // Jonas
 
         // params->realTimeToScoreTime[realTimeStart] = scoreTimeStart; // Jonas
         // params->realTimeToOnElements[realTimeStart].push_back(this->GetUuid()); // Jonas

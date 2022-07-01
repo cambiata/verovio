@@ -72,7 +72,12 @@ namespace vrv
     //----------------------------------------------------------------------------
 
     LayerElement::LayerElement()
-        : Object(LAYER_ELEMENT, "le-"), FacsimileInterface(), LinkingInterface(), AttCoordX1(), AttLabelled(), AttTyped()
+        : Object(LAYER_ELEMENT, "le-"),
+          FacsimileInterface(),
+          LinkingInterface(),
+          AttCoordX1(),
+          AttLabelled(),
+          AttTyped()
     {
         this->RegisterInterface(FacsimileInterface::GetAttClasses(), FacsimileInterface::IsInterface());
         this->RegisterInterface(LinkingInterface::GetAttClasses(), LinkingInterface::IsInterface());
@@ -3098,11 +3103,6 @@ namespace vrv
     {
         GenerateTimemapParams *params = vrv_params_cast<GenerateTimemapParams *>(functorParams);
         assert(params);
-
-        // LayerElement *element = this->ThisOrSameasAsLink();
-        // Note *note = vrv_cast<Note *>(this->ThisOrSameasLink());
-
-        std::cout << "Timemap LAYER ELEMENT" << std::endl;
 
         if (this->IsScoreDefElement())
             return FUNCTOR_SIBLINGS;

@@ -43,6 +43,7 @@ namespace vrv
                     public AttNNumberLike,
                     public AttPointing,
                     public AttTyped
+
     {
     private:
         using BarlineRenditionPair = std::pair<data_BARRENDITION, data_BARRENDITION>;
@@ -587,7 +588,7 @@ namespace vrv
 
         std::map<int, BarlineRenditionPair> m_invisibleStaffBarlines;
 
-    private:
+    public:
         double mx_scoreTimeIncrement;            // Jonas
         double mx_realTimeIncrementMilliseconds; // Jonas
     };
