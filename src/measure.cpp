@@ -1770,13 +1770,6 @@ namespace vrv
 
         params->m_timemap->AddEntry(this, params);
 
-        // params->realTimeToScoreTime[realTimeStart] = scoreTimeStart; // Jonas
-        // params->realTimeToOnElements[realTimeStart].push_back(this->GetUuid()); // Jonas
-        // params->realTimeToOnElements[realTimeStart].push_back(this->GetUuid()); // Jonas
-
-        // params->realTimeToScoreTime[realTimeEnd] = scoreTimeEnd;               // Jonas
-        // params->realTimeToOffElements[realTimeEnd].push_back(this->GetUuid()); // Jonas
-
         return FUNCTOR_CONTINUE;
     }
 
@@ -1806,8 +1799,8 @@ namespace vrv
         params->m_currentRealTimeSeconds += scoreTimeIncrement * 60.0 / m_currentTempo;
         params->m_multiRestFactor = 1;
 
-        this->mx_scoreTimeIncrement = scoreTimeIncrement;
-        this->mx_realTimeIncrementMilliseconds = (scoreTimeIncrement * 60.0 / m_currentTempo) * 1000;
+        this->mx_scoreTimeIncrement = scoreTimeIncrement;                                             // Jonas
+        this->mx_realTimeIncrementMilliseconds = (scoreTimeIncrement * 60.0 / m_currentTempo) * 1000; // Jonas
 
         return FUNCTOR_CONTINUE;
     }

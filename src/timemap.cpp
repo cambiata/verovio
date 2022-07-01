@@ -111,12 +111,10 @@ namespace vrv
             double scoreTimeStart = params->m_scoreTimeOffset;
             double realTimeStart = params->m_realTimeOffsetMilliseconds;
 
-            double scoreTimeIncrement = measure->mx_scoreTimeIncrement;
-            double realTimeIncrement = measure->mx_realTimeIncrementMilliseconds;
-            double scoreTimeEnd = scoreTimeStart + scoreTimeIncrement;
-            double realTimeEnd = realTimeStart + realTimeIncrement;
-            std::cout << "Meausre scoreTimeIncrement" << scoreTimeIncrement << std::endl;
-            std::cout << "Meausre realTimeIncrement" << realTimeIncrement << std::endl;
+            double scoreTimeIncrement = measure->mx_scoreTimeIncrement;           // Jonas
+            double realTimeIncrement = measure->mx_realTimeIncrementMilliseconds; // Jonas
+            double scoreTimeEnd = scoreTimeStart + scoreTimeIncrement;            // Jonas
+            double realTimeEnd = realTimeStart + realTimeIncrement;               // Jonas
 
             if (m_map.count(realTimeStart) == 0)
             {
@@ -130,16 +128,16 @@ namespace vrv
             // Add the measureOn
             startEntry->measureOn = measure->GetID();
 
-            /*********** end values ***********/
+            /*********** end values ***********/ // Jonas
 
-            if (m_map.count(realTimeEnd) == 0)
+            if (m_map.count(realTimeEnd) == 0) // Jonas
             {
-                m_map[realTimeEnd] = emptyEntry;
+                m_map[realTimeEnd] = emptyEntry; // Jonas
             }
-            TimemapEntry *endEntry = &m_map.at(realTimeEnd);
+            TimemapEntry *endEntry = &m_map.at(realTimeEnd); // Jonas
 
-            endEntry->qstamp = scoreTimeEnd;
-            endEntry->restsOff.push_back(measure->GetID());
+            endEntry->qstamp = scoreTimeEnd;         // Jonas
+            endEntry->measureOff = measure->GetID(); // Jonas
         }
     }
 
@@ -206,9 +204,18 @@ namespace vrv
             }
 
             // measureOn
-            if (includeMeasures && !entry.measureOn.empty())
+            if (includeMeasures)
             {
-                o << "measureOn" << entry.measureOn;
+                if (!entry.measureOn.empty())
+                {
+                    o << "measureOn" << entry.measureOn;
+                }
+
+                // measureOn
+                if (!entry.measureOff.empty()) // J0nas
+                {
+                    o << "measureOff" << entry.measureOff;
+                }
             }
 
             timemap << o;
