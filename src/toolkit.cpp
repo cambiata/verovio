@@ -72,7 +72,7 @@ namespace vrv
 
     Toolkit::Toolkit(bool initFont)
     {
-        std::cout << "Verovio WAV Extended" << std::endl;
+        std::cout << "Verovio 3.11 WAV Extended" << std::endl;
 
         m_inputFrom = AUTO;
         m_outputTo = UNKNOWN;
