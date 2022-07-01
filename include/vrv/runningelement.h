@@ -90,13 +90,16 @@ public:
      * @name Get the size of row, cols or cells
      */
     ///@{
-    int GetTotalHeight();
+    /** Height including margins */
+    virtual int GetTotalHeight(const Doc *doc) const = 0;
+    /** Content height */
+    int GetContentHeight() const;
     /** Row from 0 to 2 */
-    int GetRowHeight(int row);
+    int GetRowHeight(int row) const;
     /** Col from 0 to 2 */
-    int GetColHeight(int col);
+    int GetColHeight(int col) const;
     /** Row from 0 to 8 */
-    int GetCellHeight(int cell);
+    int GetCellHeight(int cell) const;
     ///@}
 
     /**
@@ -119,7 +122,7 @@ public:
     /**
      * Load the footer from the resources (footer.svg)
      */
-    void LoadFooter();
+    void LoadFooter(const Doc *doc);
 
     /**
      * Add page numbering to the running element.
@@ -129,6 +132,11 @@ public:
     //----------//
     // Functors //
     //----------//
+
+    /**
+     * See Object::PrepareDataInitialization
+     */
+    int PrepareDataInitialization(FunctorParams *) override;
 
     /**
      * See Object::Save
@@ -150,7 +158,7 @@ protected:
      * Filter the list for a specific class.
      * Keep only the top <rend> and <fig>
      */
-    void FilterList(ArrayOfObjects *childList) override;
+    void FilterList(ListOfConstObjects &childList) const override;
 
 private:
     /**

@@ -14,6 +14,7 @@
 //----------------------------------------------------------------------------
 
 #include "horizontalaligner.h"
+#include "resources.h"
 #include "smufl.h"
 
 namespace vrv {
@@ -33,14 +34,14 @@ Mordent::Mordent()
     , AttPlacementRelStaff()
     , AttMordentLog()
 {
-    RegisterInterface(TimePointInterface::GetAttClasses(), TimePointInterface::IsInterface());
-    RegisterAttClass(ATT_COLOR);
-    RegisterAttClass(ATT_EXTSYM);
-    RegisterAttClass(ATT_ORNAMENTACCID);
-    RegisterAttClass(ATT_PLACEMENTRELSTAFF);
-    RegisterAttClass(ATT_MORDENTLOG);
+    this->RegisterInterface(TimePointInterface::GetAttClasses(), TimePointInterface::IsInterface());
+    this->RegisterAttClass(ATT_COLOR);
+    this->RegisterAttClass(ATT_EXTSYM);
+    this->RegisterAttClass(ATT_ORNAMENTACCID);
+    this->RegisterAttClass(ATT_PLACEMENTRELSTAFF);
+    this->RegisterAttClass(ATT_MORDENTLOG);
 
-    Reset();
+    this->Reset();
 }
 
 Mordent::~Mordent() {}
@@ -49,32 +50,35 @@ void Mordent::Reset()
 {
     ControlElement::Reset();
     TimePointInterface::Reset();
-    ResetColor();
-    ResetExtSym();
-    ResetOrnamentAccid();
-    ResetPlacementRelStaff();
-    ResetMordentLog();
+    this->ResetColor();
+    this->ResetExtSym();
+    this->ResetOrnamentAccid();
+    this->ResetPlacementRelStaff();
+    this->ResetMordentLog();
 }
 
 wchar_t Mordent::GetMordentGlyph() const
 {
+    const Resources *resources = this->GetDocResources();
+    if (!resources) return 0;
+
     // If there is glyph.num, prioritize it
-    if (HasGlyphNum()) {
-        wchar_t code = GetGlyphNum();
-        if (NULL != Resources::GetGlyph(code)) return code;
+    if (this->HasGlyphNum()) {
+        wchar_t code = this->GetGlyphNum();
+        if (NULL != resources->GetGlyph(code)) return code;
     }
     // If there is glyph.name (second priority)
-    else if (HasGlyphName()) {
-        wchar_t code = Resources::GetGlyphCode(GetGlyphName());
-        if (NULL != Resources::GetGlyph(code)) return code;
+    else if (this->HasGlyphName()) {
+        wchar_t code = resources->GetGlyphCode(this->GetGlyphName());
+        if (NULL != resources->GetGlyph(code)) return code;
     }
 
     // Handle glyph based on other attributes
-    if (GetLong() == BOOLEAN_true) {
-        return GetForm() == mordentLog_FORM_upper ? SMUFL_E56E_ornamentTremblement
-                                                  : SMUFL_E5BD_ornamentPrecompTrillWithMordent;
+    if (this->GetLong() == BOOLEAN_true) {
+        return this->GetForm() == mordentLog_FORM_upper ? SMUFL_E56E_ornamentTremblement
+                                                        : SMUFL_E5BD_ornamentPrecompTrillWithMordent;
     }
-    return GetForm() == mordentLog_FORM_upper ? SMUFL_E56C_ornamentShortTrill : SMUFL_E56D_ornamentMordent;
+    return this->GetForm() == mordentLog_FORM_upper ? SMUFL_E56C_ornamentShortTrill : SMUFL_E56D_ornamentMordent;
 }
 
 //----------------------------------------------------------------------------

@@ -34,10 +34,10 @@ static const ClassRegistrar<Section> s_factory("section", SECTION);
 
 Section::Section() : SystemElement(SECTION, "section-"), SystemMilestoneInterface(), AttNNumberLike(), AttSectionVis()
 {
-    RegisterAttClass(ATT_NNUMBERLIKE);
-    RegisterAttClass(ATT_SECTIONVIS);
+    this->RegisterAttClass(ATT_NNUMBERLIKE);
+    this->RegisterAttClass(ATT_SECTIONVIS);
 
-    Reset();
+    this->Reset();
 }
 
 Section::~Section() {}
@@ -46,8 +46,8 @@ void Section::Reset()
 {
     SystemElement::Reset();
     SystemMilestoneInterface::Reset();
-    ResetNNumberLike();
-    ResetSectionVis();
+    this->ResetNNumberLike();
+    this->ResetSectionVis();
 }
 
 bool Section::IsSupportedChild(Object *child)
@@ -115,12 +115,12 @@ int Section::PrepareMilestones(FunctorParams *functorParams)
     return FUNCTOR_CONTINUE;
 }
 
-int Section::ResetDrawing(FunctorParams *functorParams)
+int Section::ResetData(FunctorParams *functorParams)
 {
-    FloatingObject::ResetDrawing(functorParams);
+    FloatingObject::ResetData(functorParams);
 
     if (this->IsSystemMilestone()) {
-        this->SystemMilestoneInterface::InterfaceResetDrawing(functorParams);
+        this->SystemMilestoneInterface::InterfaceResetData(functorParams);
     }
 
     return FUNCTOR_CONTINUE;

@@ -13,6 +13,7 @@
 //----------------------------------------------------------------------------
 
 #include "doc.h"
+#include "docselection.h"
 #include "view.h"
 
 //----------------------------------------------------------------------------
@@ -28,6 +29,7 @@ enum FileFormat {
     MEI,
     HUMDRUM,
     HUMMEI,
+    HUMMIDI,
     PAE,
     ABC,
     DARMS,
@@ -81,7 +83,17 @@ public:
      *
      * @return The ID as as string
      */
-    std::string GetUuid() { return m_doc.GetUuid(); }
+    std::string GetID() { return m_doc.GetID(); }
+
+    /**
+     * @name Deprecated version, same as GetID()
+     */
+    std::string GetUuid();
+
+    /**
+     * Get the resource path for the Toolkit instance.
+     */
+    std::string GetResourcePath() const;
 
     /**
      * Set the resource path for the Toolkit instance.
@@ -93,6 +105,11 @@ public:
      * @return True if the resources was successfully loaded
      */
     bool SetResourcePath(const std::string &path);
+
+    /**
+     * Set the font in the resources
+     */
+    bool SetFont(const std::string &fontName);
 
     /**
      * Get the log content for the latest operation
@@ -287,6 +304,17 @@ public:
      */
     bool SetOutputTo(std::string const &outputTo);
 
+    /**
+     * Set the value for a selection.
+     * The selection will be applied only when some data is loaded or the layout is redone.
+     * The selection can be reset (cancelled) by passing an empty string or an empty JSON object.
+     * A selection across multiple mdivs is not possible.
+     *
+     * @param selection The selection as a stringified JSON object
+     * @return True if the selection was successfully parsed or reset
+     */
+    bool Select(const std::string &selection);
+
     ///@}
 
     /**
@@ -380,9 +408,10 @@ public:
     /**
      * Render a document to a timemap
      *
+     * @param jsonOptions A stringified JSON objects with the timemap options
      * @return The timemap as a string
      */
-    std::string RenderToTimemap();
+    std::string RenderToTimemap(const std::string &jsonOptions = "");
 
     /**
      * Render a document to timemap and save it to the file
@@ -390,9 +419,10 @@ public:
      * This methods is not available in the JavaScript version of the toolkit.
      *
      * @param @filename The output filename
+     * @param jsonOptions A stringified JSON objects with the timemap options
      * @return True if the file was successfully written
      */
-    bool RenderToTimemapFile(const std::string &filename);
+    bool RenderToTimemapFile(const std::string &filename, const std::string &jsonOptions = "");
 
     //@}
 
@@ -423,6 +453,13 @@ public:
      * @return The Humdrum data as a string
      */
     std::string ConvertHumdrumToHumdrum(const std::string &humdrumData);
+
+    /**
+     * Convert Humdrum data to MIDI.
+     *
+     * @return The MIDI file as a base64-encoded string
+     */
+    std::string ConvertHumdrumToMIDI(const std::string &humdrumData);
 
     /**
      * Write the humdrum buffer to the file
@@ -570,8 +607,11 @@ public:
      *
      * This can be called once the rendering option were changed, for example with a new page (sceen) height or a new
      * zoom level.
+     *
+     * @param jsonOptions A stringified JSON object with the action options
+     * resetCache: true or false; true by default;
      */
-    void RedoLayout();
+    void RedoLayout(const std::string &jsonOptions = "");
 
     /**
      * Redo the layout of the pitch postitions of the current drawing page
@@ -597,6 +637,13 @@ public:
      * @internal They are marked with \@ingroup nodoc
      */
     ///@{
+
+    /**
+     * Skip the layout on load to speed up MIDI or timemap output
+     *
+     * @ingroup nodoc
+     */
+    void SkipLayoutOnLoad(bool value);
 
     /**
      * Render the page to the deviceContext
@@ -716,11 +763,14 @@ public:
     //
 private:
     Doc m_doc;
+    DocSelection m_docSelection;
     View m_view;
     FileFormat m_inputFrom;
     FileFormat m_outputTo;
 
     Options *m_options;
+
+    bool m_skipLayoutOnLoad;
 
     /**
      * The C buffer string.

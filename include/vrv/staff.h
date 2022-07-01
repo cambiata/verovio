@@ -58,12 +58,16 @@ public:
      */
     void CloneReset() override;
 
-    FacsimileInterface *GetFacsimileInterface() override { return dynamic_cast<FacsimileInterface *>(this); }
-
     /**
-     * Return a const pointer to the children
+     * @name Getter to interfaces
      */
-    const ArrayOfObjects *GetChildren(bool docChildren = true) const override;
+    ///@{
+    FacsimileInterface *GetFacsimileInterface() override { return vrv_cast<FacsimileInterface *>(this); }
+    const FacsimileInterface *GetFacsimileInterface() const override
+    {
+        return vrv_cast<const FacsimileInterface *>(this);
+    }
+    ///@}
 
     /**
      * Delete all the legder line arrays.
@@ -106,12 +110,14 @@ public:
      * @name Get notation type
      */
     ///@{
-    bool IsMensural();
-    bool IsNeume();
-    bool IsTablature();
-    bool IsTabLuteFrench() { return m_drawingNotationType == NOTATIONTYPE_tab_lute_french; }
-    bool IsTabLuteGerman() { return m_drawingNotationType == NOTATIONTYPE_tab_lute_german; }
-    bool IsTabLuteItalian() { return m_drawingNotationType == NOTATIONTYPE_tab_lute_italian; }
+    bool IsMensural() const;
+    bool IsNeume() const;
+    bool IsTablature() const;
+    bool IsTabGuitar() const { return m_drawingNotationType == NOTATIONTYPE_tab_guitar; }
+    bool IsTabLuteFrench() const { return m_drawingNotationType == NOTATIONTYPE_tab_lute_french; }
+    bool IsTabLuteGerman() const { return m_drawingNotationType == NOTATIONTYPE_tab_lute_german; }
+    bool IsTabLuteItalian() const { return m_drawingNotationType == NOTATIONTYPE_tab_lute_italian; }
+    bool IsTabWithStemsOutside() const;
     ///@}
 
     /**
@@ -152,7 +158,7 @@ public:
      * Used for calculating clustered information/dot position.
      * The *Doc is the parent doc but passed as param in order to avoid look-up
      */
-    bool IsOnStaffLine(int y, Doc *doc);
+    bool IsOnStaffLine(int y, const Doc *doc) const;
 
     /**
      * Find the nearest unit position in the direction indicated by place.
@@ -166,6 +172,11 @@ public:
      * exists).
      */
     virtual void SetFromFacsimile(Doc *doc);
+
+    /**
+     * Set beam adjustment for the corresponding staff alignment
+     */
+    void SetAlignmentBeamAdjustment(int adjust);
 
     //----------//
     // Functors //
@@ -212,9 +223,9 @@ public:
     int CalcLedgerLinesEnd(FunctorParams *functorParams) override;
 
     /**
-     * See Object::FillStaffCurrentTimeSpanning
+     * See Object::PrepareStaffCurrentTimeSpanning
      */
-    int FillStaffCurrentTimeSpanning(FunctorParams *functorParams) override;
+    int PrepareStaffCurrentTimeSpanning(FunctorParams *functorParams) override;
 
     /**
      * See Object::CastOffEncoding
@@ -222,9 +233,9 @@ public:
     int CastOffEncoding(FunctorParams *functorParams) override;
 
     /**
-     * See Object::ResetDrawing
+     * See Object::ResetData
      */
-    int ResetDrawing(FunctorParams *functorParams) override;
+    int ResetData(FunctorParams *functorParams) override;
 
     /**
      * See Object::PrepareRpt
@@ -232,10 +243,10 @@ public:
     int PrepareRpt(FunctorParams *functorParams) override;
 
     /**
-     * See Object::CalcOnsetOffset
+     * See Object::InitOnsetOffset
      */
     ///@{
-    int CalcOnsetOffset(FunctorParams *functorParams) override;
+    int InitOnsetOffset(FunctorParams *functorParams) override;
     ///@}
 
     /**
@@ -252,6 +263,11 @@ public:
      * See Object::GenerateMIDI
      */
     int GenerateMIDI(FunctorParams *functorParams) override;
+
+    /**
+     * See Object::Transpose
+     */
+    int Transpose(FunctorParams *functorParams) override;
 
 private:
     /**

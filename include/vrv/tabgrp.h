@@ -20,7 +20,7 @@ namespace vrv {
 /**
  * This class models the MEI <tabGrp> element.
  */
-class TabGrp : public LayerElement, public DurationInterface {
+class TabGrp : public LayerElement, public ObjectListInterface, public DurationInterface {
 public:
     /**
      * @name Constructors, destructors, and other standard methods
@@ -37,7 +37,8 @@ public:
      * @name Getter to interfaces
      */
     ///@{
-    DurationInterface *GetDurationInterface() override { return dynamic_cast<DurationInterface *>(this); }
+    DurationInterface *GetDurationInterface() override { return vrv_cast<DurationInterface *>(this); }
+    const DurationInterface *GetDurationInterface() const override { return vrv_cast<const DurationInterface *>(this); }
     ///@}
 
     /**
@@ -45,17 +46,38 @@ public:
      */
     bool IsSupportedChild(Object *object) override;
 
+    /**
+     * Return the top or bottom note or their Y position
+     */
+    ///@{
+    Note *GetTopNote();
+    const Note *GetTopNote() const;
+    Note *GetBottomNote();
+    const Note *GetBottomNote() const;
+    int GetYTop() const;
+    int GetYBottom() const;
+    ///@}
+
     //----------//
     // Functors //
     //----------//
 
     /**
-     * See Object::CalcOnsetOffsetEnd
+     * See Object::InitOnsetOffsetEnd
      */
-    virtual int CalcOnsetOffsetEnd(FunctorParams *functorParams) override;
+    virtual int InitOnsetOffsetEnd(FunctorParams *functorParams) override;
+
+    /**
+     * See Object::CalcStem
+     */
+    int CalcStem(FunctorParams *functorParams) override;
 
 protected:
-    //
+    /**
+     * Filter the flat list and keep only Note elements.
+     */
+    void FilterList(ListOfConstObjects &childList) const override;
+
 private:
     //
 public:

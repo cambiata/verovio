@@ -30,10 +30,10 @@ static const ClassRegistrar<Mdiv> s_factory("mdiv", MDIV);
 
 Mdiv::Mdiv() : PageElement(MDIV, "mdiv-"), PageMilestoneInterface(), AttLabelled(), AttNNumberLike()
 {
-    RegisterAttClass(ATT_LABELLED);
-    RegisterAttClass(ATT_NNUMBERLIKE);
+    this->RegisterAttClass(ATT_LABELLED);
+    this->RegisterAttClass(ATT_NNUMBERLIKE);
 
-    Reset();
+    this->Reset();
 }
 
 Mdiv::~Mdiv() {}
@@ -41,8 +41,8 @@ Mdiv::~Mdiv() {}
 void Mdiv::Reset()
 {
     Object::Reset();
-    ResetLabelled();
-    ResetNNumberLike();
+    this->ResetLabelled();
+    this->ResetNNumberLike();
 
     m_visibility = Hidden;
 }
@@ -64,8 +64,8 @@ bool Mdiv::IsSupportedChild(Object *child)
 void Mdiv::MakeVisible()
 {
     m_visibility = Visible;
-    if (GetParent() && GetParent()->Is(MDIV)) {
-        Mdiv *parent = vrv_cast<Mdiv *>(GetParent());
+    if (this->GetParent() && this->GetParent()->Is(MDIV)) {
+        Mdiv *parent = vrv_cast<Mdiv *>(this->GetParent());
         assert(parent);
         parent->MakeVisible();
     }
@@ -117,6 +117,18 @@ int Mdiv::ConvertToPageBasedEnd(FunctorParams *functorParams)
     assert(params);
 
     if (m_visibility == Visible) ConvertToPageBasedMilestone(this, params->m_page);
+
+    return FUNCTOR_CONTINUE;
+}
+
+int Mdiv::Transpose(FunctorParams *functorParams)
+{
+    TransposeParams *params = vrv_params_cast<TransposeParams *>(functorParams);
+    assert(params);
+
+    params->m_currentMdivIDs.push_back(this->GetID());
+    params->m_keySigForStaffN.clear();
+    params->m_transposeIntervalForStaffN.clear();
 
     return FUNCTOR_CONTINUE;
 }

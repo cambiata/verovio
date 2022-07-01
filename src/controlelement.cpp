@@ -29,31 +29,31 @@ namespace vrv {
 
 ControlElement::ControlElement() : FloatingObject(CONTROL_ELEMENT, "ce"), LinkingInterface(), AttLabelled(), AttTyped()
 {
-    RegisterInterface(LinkingInterface::GetAttClasses(), LinkingInterface::IsInterface());
-    RegisterAttClass(ATT_LABELLED);
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterInterface(LinkingInterface::GetAttClasses(), LinkingInterface::IsInterface());
+    this->RegisterAttClass(ATT_LABELLED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 ControlElement::ControlElement(ClassId classId)
     : FloatingObject(classId, "ce"), LinkingInterface(), AttLabelled(), AttTyped()
 {
-    RegisterInterface(LinkingInterface::GetAttClasses(), LinkingInterface::IsInterface());
-    RegisterAttClass(ATT_LABELLED);
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterInterface(LinkingInterface::GetAttClasses(), LinkingInterface::IsInterface());
+    this->RegisterAttClass(ATT_LABELLED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 ControlElement::ControlElement(ClassId classId, const std::string &classIdStr)
     : FloatingObject(classId, classIdStr), LinkingInterface(), AttLabelled(), AttTyped()
 {
-    RegisterInterface(LinkingInterface::GetAttClasses(), LinkingInterface::IsInterface());
-    RegisterAttClass(ATT_LABELLED);
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterInterface(LinkingInterface::GetAttClasses(), LinkingInterface::IsInterface());
+    this->RegisterAttClass(ATT_LABELLED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 ControlElement::~ControlElement() {}
@@ -62,30 +62,30 @@ void ControlElement::Reset()
 {
     FloatingObject::Reset();
     LinkingInterface::Reset();
-    ResetLabelled();
-    ResetTyped();
+    this->ResetLabelled();
+    this->ResetTyped();
 }
 
-data_HORIZONTALALIGNMENT ControlElement::GetChildRendAlignment()
+data_HORIZONTALALIGNMENT ControlElement::GetChildRendAlignment() const
 {
-    Rend *rend = dynamic_cast<Rend *>(this->FindDescendantByType(REND));
+    const Rend *rend = dynamic_cast<const Rend *>(this->FindDescendantByType(REND));
     if (!rend || !rend->HasHalign()) return HORIZONTALALIGNMENT_NONE;
 
     return rend->GetHalign();
 }
 
-data_STAFFREL ControlElement::GetLayerPlace(data_STAFFREL defaultValue)
+data_STAFFREL ControlElement::GetLayerPlace(data_STAFFREL defaultValue) const
 {
     // Do this only for the following elements
     if (!this->Is({ TRILL, MORDENT, TURN })) return defaultValue;
 
-    TimePointInterface *interface = this->GetTimePointInterface();
+    const TimePointInterface *interface = this->GetTimePointInterface();
     assert(interface);
 
-    LayerElement *start = interface->GetStart();
+    const LayerElement *start = interface->GetStart();
     if (!start || start->Is(TIMESTAMP_ATTR)) return defaultValue;
 
-    Layer *layer = vrv_cast<Layer *>(start->GetFirstAncestor(LAYER));
+    const Layer *layer = vrv_cast<const Layer *>(start->GetFirstAncestor(LAYER));
     // We are only looking that the element cross-staff. We could use LayerElement::GetCrossStaff(Layer  *&)
     if (start->m_crossLayer) layer = start->m_crossLayer;
     assert(layer);
@@ -129,7 +129,7 @@ int ControlElement::AdjustXOverflow(FunctorParams *functorParams)
     // Something is probably not right if nothing found - maybe no @staff
     if (positioners.empty()) {
         LogDebug("Something was wrong when searching positioners for %s '%s'", this->GetClassName().c_str(),
-            this->GetUuid().c_str());
+            this->GetID().c_str());
         return FUNCTOR_SIBLINGS;
     }
 
@@ -143,16 +143,16 @@ int ControlElement::AdjustXOverflow(FunctorParams *functorParams)
     return FUNCTOR_CONTINUE;
 }
 
-int ControlElement::ResetDrawing(FunctorParams *functorParams)
+int ControlElement::ResetData(FunctorParams *functorParams)
 {
     // Call parent one too
-    FloatingObject::ResetDrawing(functorParams);
+    FloatingObject::ResetData(functorParams);
 
     // Pass it to the pseudo functor of the interface
     if (this->HasInterface(INTERFACE_LINKING)) {
         LinkingInterface *interface = this->GetLinkingInterface();
         assert(interface);
-        return interface->InterfaceResetDrawing(functorParams, this);
+        return interface->InterfaceResetData(functorParams, this);
     }
 
     return FUNCTOR_CONTINUE;

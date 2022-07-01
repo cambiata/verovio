@@ -69,7 +69,7 @@ public:
      * Get the StaffAlignment for the staffN.
      * Return NULL if not found.
      */
-    StaffAlignment *GetStaffAlignmentForStaffN(int staffN) const;
+    StaffAlignment *GetStaffAlignmentForStaffN(int staffN);
 
     /**
      * Get pointer to the parent system.
@@ -90,8 +90,8 @@ public:
     /**
      * Get System Overflows
      */
-    int GetOverflowAbove(const Doc *doc) const;
-    int GetOverflowBelow(const Doc *doc) const;
+    int GetOverflowAbove(const Doc *doc, bool scoreDefClef = false) const;
+    int GetOverflowBelow(const Doc *doc, bool scoreDefClef = false) const;
 
     /**
      * Get justification sum
@@ -101,7 +101,7 @@ public:
     /**
      * Calculates and sets spacing for specified ScoreDef
      */
-    void SetSpacing(ScoreDef *scoreDef);
+    void SetSpacing(const ScoreDef *scoreDef);
 
 private:
     /**
@@ -112,7 +112,7 @@ private:
     /**
      * Calculates above spacing type for staffDef
      */
-    SpacingType CalculateSpacingAbove(StaffDef *staffDef) const;
+    SpacingType CalculateSpacingAbove(const StaffDef *staffDef) const;
 
 public:
     //
@@ -189,7 +189,10 @@ public:
      * Look for the FloatingPositioner corresponding to the FloatingObject.
      * Return NULL if not found and does not create anything.
      */
-    FloatingPositioner *GetCorrespFloatingPositioner(FloatingObject *object);
+    ///@{
+    FloatingPositioner *GetCorrespFloatingPositioner(const FloatingObject *object);
+    const FloatingPositioner *GetCorrespFloatingPositioner(const FloatingObject *object) const;
+    ///@}
 
     /**
      * @name Setter and getter of the staff from which the alignment is created alignment.
@@ -218,13 +221,13 @@ public:
     const AttSpacing *GetAttSpacing() const;
 
     /**
-     * @name Calculates the overlow (above or below for the bounding box.
+     * @name Calculates the overflow (above or below) for the bounding box.
      * Looks if the bounding box is a FloatingPositioner or not, in which case it we take into account its m_drawingYRel
      * value.
      */
     ///@{
-    int CalcOverflowAbove(BoundingBox *box);
-    int CalcOverflowBelow(BoundingBox *box);
+    int CalcOverflowAbove(const BoundingBox *box) const;
+    int CalcOverflowBelow(const BoundingBox *box) const;
     ///@}
 
     /**
@@ -245,11 +248,15 @@ public:
     int GetOverflowBelow() const { return m_overflowBelow; }
     void SetOverlap(int overlap);
     int GetOverlap() const { return m_overlap; }
+    void SetRequestedSpaceAbove(int space);
+    int GetRequestedSpaceAbove() const { return m_requestedSpaceAbove; }
+    void SetRequestedSpaceBelow(int space);
+    int GetRequestedSpaceBelow() const { return m_requestedSpaceBelow; }
     int GetStaffHeight() const { return m_staffHeight; }
-    void SetOverflowBBoxAbove(BoundingBox *bboxAbove, int overflowAbove);
-    BoundingBox *GetOverflowBBoxAbove() const { return m_overflowBBoxAbove; }
-    void SetOverflowBBoxBelow(BoundingBox *bboxBelow, int overflowBottom);
-    BoundingBox *GetOverflowBBoxBelow() const { return m_overflowBBoxBelow; }
+    void SetScoreDefClefOverflowAbove(int overflowAbove) { m_scoreDefClefOverflowAbove = overflowAbove; }
+    int GetScoreDefClefOverflowAbove() const { return m_scoreDefClefOverflowAbove; }
+    void SetScoreDefClefOverflowBelow(int overflowBelow) { m_scoreDefClefOverflowBelow = overflowBelow; }
+    int GetScoreDefClefOverflowBelow() const { return m_scoreDefClefOverflowBelow; }
     ///@}
 
     /**
@@ -273,6 +280,11 @@ public:
     void ClearPositioners();
 
     /**
+     * Sort the FloatingPositioner objects.
+     */
+    void SortPositioners();
+
+    /**
      * Find all the intersection points with a vertical line (top to bottom)
      */
     void FindAllIntersectionPoints(
@@ -280,6 +292,19 @@ public:
 
     void ReAdjustFloatingPositionersGrps(AdjustFloatingPositionerGrpsParams *params,
         const ArrayOfFloatingPositioners &positioners, ArrayOfIntPairs &grpIdYRel);
+
+    /**
+     * @name Set/get for the beam adjust
+     */
+    ///@{
+    void SetBeamAdjust(int beamAdjust) { m_beamAdjust = beamAdjust; }
+    int GetBeamAdjust() const { return m_beamAdjust; }
+    ///@}
+
+    /**
+     * Find overflow for the alignments taking bracket group elements into account
+     */
+    void AdjustBracketGroupSpacing(Doc *doc, StaffAlignment *previous, int spacing);
 
     //----------//
     // Functors //
@@ -331,6 +356,11 @@ private:
      */
     int GetMinimumStaffSpacing(const Doc *doc, const AttSpacing *attSpacing) const;
 
+    /**
+     * Return whether current staff alignment is at the start/end of a bracket group
+     */
+    bool IsInBracketGroup(bool isFirst) const;
+
 public:
     //
 private:
@@ -343,6 +373,10 @@ private:
      * The list of FloatingPositioner for the staff.
      */
     ArrayOfFloatingPositioners m_floatingPositioners;
+    /**
+     * Flag indicating whether the list of FloatingPositioner is sorted
+     */
+    bool m_floatingPositionersSorted;
     /**
      * Stores a pointer to the staff from which the aligner was created.
      * This is necessary since we don't always have all the staves.
@@ -363,16 +397,21 @@ private:
     std::set<int> m_verseNs;
 
     /**
-     * @name values for storing the overlow and overlap
+     * @name values for storing the overflow and overlap
      */
     ///@{
     int m_overflowAbove;
     int m_overflowBelow;
     int m_overlap;
+    int m_requestedSpaceAbove;
+    int m_requestedSpaceBelow;
     int m_staffHeight;
-    BoundingBox *m_overflowBBoxAbove;
-    BoundingBox *m_overflowBBoxBelow;
+    int m_scoreDefClefOverflowAbove;
+    int m_scoreDefClefOverflowBelow;
     ///@}
+
+    // Value to store required beam adjustment for cross-staff beams
+    int m_beamAdjust = 0;
 
     /**
      * The list of overflowing bounding boxes (e.g, LayerElement or FloatingPositioner)

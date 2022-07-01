@@ -29,8 +29,6 @@ View::View()
     m_doc = NULL;
     m_options = NULL;
     m_pageIdx = 0;
-    m_tieThicknessCoefficient = 0.0;
-    m_slurThicknessCoefficient = 0.0;
     m_slurHandling = SlurHandling::Initialize;
 
     m_currentColour = AxNONE;
@@ -108,7 +106,7 @@ void View::Next(bool forward)
     else if (!forward && this->HasNext(false)) {
         m_pageIdx--;
     }
-    SetPage(m_pageIdx);
+    this->SetPage(m_pageIdx);
 }
 
 int View::ToDeviceContextX(int i)

@@ -26,11 +26,11 @@ namespace vrv {
 
 static const ClassRegistrar<TabGrp> s_factory("tabGrp", TABGRP);
 
-TabGrp::TabGrp() : LayerElement(TABGRP, "tabgrp-"), DurationInterface()
+TabGrp::TabGrp() : LayerElement(TABGRP, "tabgrp-"), ObjectListInterface(), DurationInterface()
 {
-    RegisterInterface(DurationInterface::GetAttClasses(), DurationInterface::IsInterface());
+    this->RegisterInterface(DurationInterface::GetAttClasses(), DurationInterface::IsInterface());
 
-    Reset();
+    this->Reset();
 }
 
 TabGrp::~TabGrp() {}
@@ -58,16 +58,70 @@ bool TabGrp::IsSupportedChild(Object *child)
     return true;
 }
 
+void TabGrp::FilterList(ListOfConstObjects &childList) const
+{
+    // Retain only note children of chords
+    ListOfConstObjects::iterator iter = childList.begin();
+
+    while (iter != childList.end()) {
+        if ((*iter)->Is(NOTE)) {
+            ++iter;
+        }
+        else {
+            iter = childList.erase(iter);
+        }
+    }
+
+    childList.sort(TabCourseSort());
+}
+
+int TabGrp::GetYTop() const
+{
+    // The last note is the top
+    return this->GetListBack(this)->GetDrawingY();
+}
+
+int TabGrp::GetYBottom() const
+{
+    // The first note is the bottom
+    return this->GetListFront(this)->GetDrawingY();
+}
+
+Note *TabGrp::GetTopNote()
+{
+    return const_cast<Note *>(std::as_const(*this).GetTopNote());
+}
+
+const Note *TabGrp::GetTopNote() const
+{
+    const Note *topNote = vrv_cast<const Note *>(this->GetListBack(this));
+    assert(topNote);
+    return topNote;
+}
+
+Note *TabGrp::GetBottomNote()
+{
+    return const_cast<Note *>(std::as_const(*this).GetBottomNote());
+}
+
+const Note *TabGrp::GetBottomNote() const
+{
+    // The first note is the bottom
+    const Note *bottomNote = vrv_cast<const Note *>(this->GetListFront(this));
+    assert(bottomNote);
+    return bottomNote;
+}
+
 //----------------------------------------------------------------------------
 // Functor methods
 //----------------------------------------------------------------------------
 
-int TabGrp::CalcOnsetOffsetEnd(FunctorParams *functorParams)
+int TabGrp::InitOnsetOffsetEnd(FunctorParams *functorParams)
 {
-    CalcOnsetOffsetParams *params = vrv_params_cast<CalcOnsetOffsetParams *>(functorParams);
+    InitOnsetOffsetParams *params = vrv_params_cast<InitOnsetOffsetParams *>(functorParams);
     assert(params);
 
-    LayerElement *element = this->ThisOrSameasAsLink();
+    LayerElement *element = this->ThisOrSameasLink();
 
     double incrementScoreTime = element->GetAlignmentDuration(
         params->m_currentMensur, params->m_currentMeterSig, true, params->m_notationType);
@@ -76,6 +130,17 @@ int TabGrp::CalcOnsetOffsetEnd(FunctorParams *functorParams)
 
     params->m_currentScoreTime += incrementScoreTime;
     params->m_currentRealTimeSeconds += realTimeIncrementSeconds;
+
+    return FUNCTOR_CONTINUE;
+}
+
+int TabGrp::CalcStem(FunctorParams *functorParams)
+{
+    CalcStemParams *params = vrv_params_cast<CalcStemParams *>(functorParams);
+    assert(params);
+
+    params->m_dur = this->GetActualDur();
+    params->m_tabGrpWithNoNote = (!this->FindDescendantByType(NOTE));
 
     return FUNCTOR_CONTINUE;
 }

@@ -36,36 +36,36 @@ namespace vrv {
 EditorialElement::EditorialElement()
     : Object(EDITORIAL_ELEMENT, "ee-"), SystemMilestoneInterface(), AttLabelled(), AttTyped()
 {
-    RegisterAttClass(ATT_LABELLED);
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_LABELLED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 EditorialElement::EditorialElement(ClassId classId)
     : Object(classId, "ee-"), SystemMilestoneInterface(), AttLabelled(), AttTyped()
 {
-    RegisterAttClass(ATT_LABELLED);
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_LABELLED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 EditorialElement::EditorialElement(ClassId classId, const std::string &classIdStr)
     : Object(classId, classIdStr), SystemMilestoneInterface(), AttLabelled(), AttTyped()
 {
-    RegisterAttClass(ATT_LABELLED);
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_LABELLED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 void EditorialElement::Reset()
 {
     Object::Reset();
     SystemMilestoneInterface::Reset();
-    ResetLabelled();
-    ResetTyped();
+    this->ResetLabelled();
+    this->ResetTyped();
 
     m_visibility = Visible;
 }
@@ -147,10 +147,10 @@ int EditorialElement::PrepareMilestones(FunctorParams *functorParams)
     return FUNCTOR_CONTINUE;
 }
 
-int EditorialElement::ResetDrawing(FunctorParams *functorParams)
+int EditorialElement::ResetData(FunctorParams *functorParams)
 {
     if (this->IsSystemMilestone()) {
-        this->SystemMilestoneInterface::InterfaceResetDrawing(functorParams);
+        this->SystemMilestoneInterface::InterfaceResetData(functorParams);
     }
 
     return FUNCTOR_CONTINUE;
@@ -180,6 +180,19 @@ int EditorialElement::CastOffSystems(FunctorParams *functorParams)
 int EditorialElement::CastOffEncoding(FunctorParams *functorParams)
 {
     CastOffEncodingParams *params = vrv_params_cast<CastOffEncodingParams *>(functorParams);
+    assert(params);
+
+    // Only move editorial elements that are a child of the system
+    if (this->GetParent() && this->GetParent()->Is(SYSTEM)) {
+        MoveItselfTo(params->m_currentSystem);
+    }
+
+    return FUNCTOR_SIBLINGS;
+}
+
+int EditorialElement::CastOffToSelection(FunctorParams *functorParams)
+{
+    CastOffToSelectionParams *params = vrv_params_cast<CastOffToSelectionParams *>(functorParams);
     assert(params);
 
     MoveItselfTo(params->m_currentSystem);

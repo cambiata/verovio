@@ -24,24 +24,24 @@ namespace vrv {
 
 SystemElement::SystemElement() : FloatingObject(SYSTEM_ELEMENT, "se"), AttTyped()
 {
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 SystemElement::SystemElement(ClassId classId) : FloatingObject(classId, "se"), AttTyped()
 {
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 SystemElement::SystemElement(ClassId classId, const std::string &classIdStr)
     : FloatingObject(classId, classIdStr), AttTyped()
 {
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 SystemElement::~SystemElement() {}
@@ -49,7 +49,7 @@ SystemElement::~SystemElement() {}
 void SystemElement::Reset()
 {
     FloatingObject::Reset();
-    ResetTyped();
+    this->ResetTyped();
 
     m_visibility = Visible;
 }
@@ -99,6 +99,16 @@ int SystemElement::CastOffSystems(FunctorParams *functorParams)
 int SystemElement::CastOffEncoding(FunctorParams *functorParams)
 {
     CastOffEncodingParams *params = vrv_params_cast<CastOffEncodingParams *>(functorParams);
+    assert(params);
+
+    MoveItselfTo(params->m_currentSystem);
+
+    return FUNCTOR_SIBLINGS;
+}
+
+int SystemElement::CastOffToSelection(FunctorParams *functorParams)
+{
+    CastOffToSelectionParams *params = vrv_params_cast<CastOffToSelectionParams *>(functorParams);
     assert(params);
 
     MoveItselfTo(params->m_currentSystem);

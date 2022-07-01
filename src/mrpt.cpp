@@ -30,11 +30,13 @@ namespace vrv {
 
 static const ClassRegistrar<MRpt> s_factory("mRpt", MRPT);
 
-MRpt::MRpt() : LayerElement(MRPT, "mrpt-"), AttColor()
+MRpt::MRpt() : LayerElement(MRPT, "mrpt-"), AttColor(), AttNumbered(), AttNumberPlacement()
 {
-    RegisterAttClass(ATT_COLOR);
+    this->RegisterAttClass(ATT_COLOR);
+    this->RegisterAttClass(ATT_NUMBERED);
+    this->RegisterAttClass(ATT_NUMBERPLACEMENT);
 
-    Reset();
+    this->Reset();
 }
 
 MRpt::~MRpt() {}
@@ -42,7 +44,9 @@ MRpt::~MRpt() {}
 void MRpt::Reset()
 {
     LayerElement::Reset();
-    ResetColor();
+    this->ResetColor();
+    this->ResetNumbered();
+    this->ResetNumberPlacement();
 
     m_drawingMeasureCount = 0;
 }

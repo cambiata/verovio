@@ -24,23 +24,23 @@ namespace vrv {
 
 PageElement::PageElement() : Object(PAGE_ELEMENT, "pe"), AttTyped()
 {
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 PageElement::PageElement(ClassId classId) : Object(classId, "pe"), AttTyped()
 {
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 PageElement::PageElement(ClassId classId, const std::string &classIdStr) : Object(classId, classIdStr), AttTyped()
 {
-    RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_TYPED);
 
-    Reset();
+    this->Reset();
 }
 
 PageElement::~PageElement() {}
@@ -48,7 +48,7 @@ PageElement::~PageElement() {}
 void PageElement::Reset()
 {
     Object::Reset();
-    ResetTyped();
+    this->ResetTyped();
 }
 
 //----------------------------------------------------------------------------
@@ -85,6 +85,16 @@ int PageElement::CastOffEncoding(FunctorParams *functorParams)
     assert(params);
 
     MoveItselfTo(params->m_currentPage);
+
+    return FUNCTOR_SIBLINGS;
+}
+
+int PageElement::CastOffToSelection(FunctorParams *functorParams)
+{
+    CastOffToSelectionParams *params = vrv_params_cast<CastOffToSelectionParams *>(functorParams);
+    assert(params);
+
+    MoveItselfTo(params->m_page);
 
     return FUNCTOR_SIBLINGS;
 }

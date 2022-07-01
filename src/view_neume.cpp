@@ -44,12 +44,12 @@ void View::DrawSyllable(DeviceContext *dc, LayerElement *element, Layer *layer, 
     /******************************************************************/
     // Start the Beam graphic and draw the children
 
-    dc->StartGraphic(element, "", element->GetUuid());
+    dc->StartGraphic(element, "", element->GetID());
 
     /******************************************************************/
     // Draw the children
 
-    DrawLayerChildren(dc, syllable, layer, staff, measure);
+    this->DrawLayerChildren(dc, syllable, layer, staff, measure);
 
     dc->EndGraphic(element, this);
 }
@@ -71,7 +71,7 @@ void View::DrawNc(DeviceContext *dc, LayerElement *element, Layer *layer, Staff 
     };
     std::vector<drawingParams> params;
     params.push_back(drawingParams());
-    dc->StartGraphic(element, "", element->GetUuid());
+    dc->StartGraphic(element, "", element->GetID());
 
     /******************************************************************/
 
@@ -183,13 +183,13 @@ void View::DrawNc(DeviceContext *dc, LayerElement *element, Layer *layer, Staff 
     yValue = clefYPosition + pitchOffset + octaveOffset - rotateOffset;
 
     for (auto it = params.begin(); it != params.end(); it++) {
-        DrawSmuflCode(dc, noteX + it->xOffset * noteWidth, yValue + it->yOffset * noteHeight, it->fontNo,
+        this->DrawSmuflCode(dc, noteX + it->xOffset * noteWidth, yValue + it->yOffset * noteHeight, it->fontNo,
             staff->m_drawingStaffSize, false, true);
     }
 
     // adjust facsimile values of element based on where it is rendered if necessary
     if ((m_doc->GetType() == Facs) && element->HasFacs()) {
-        FacsimileInterface *fi = dynamic_cast<FacsimileInterface *>(element);
+        FacsimileInterface *fi = element->GetFacsimileInterface();
         fi->GetZone()->SetUlx(noteX);
         fi->GetZone()->SetUly(ToDeviceContextY(yValue));
         fi->GetZone()->SetLrx(noteX + noteWidth);
@@ -197,7 +197,7 @@ void View::DrawNc(DeviceContext *dc, LayerElement *element, Layer *layer, Staff 
     }
 
     // Draw the children
-    DrawLayerChildren(dc, nc, layer, staff, measure);
+    this->DrawLayerChildren(dc, nc, layer, staff, measure);
 
     dc->EndGraphic(element, this);
 }
@@ -215,8 +215,8 @@ void View::DrawNeume(DeviceContext *dc, LayerElement *element, Layer *layer, Sta
     /******************************************************************/
     // Start the Neume graphic and draw the children
 
-    dc->StartGraphic(element, "", element->GetUuid());
-    DrawLayerChildren(dc, neume, layer, staff, measure);
+    dc->StartGraphic(element, "", element->GetID());
+    this->DrawLayerChildren(dc, neume, layer, staff, measure);
     dc->EndGraphic(element, this);
 }
 

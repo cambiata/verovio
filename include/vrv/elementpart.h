@@ -35,13 +35,14 @@ public:
     virtual ~Dots();
     void Reset() override;
     std::string GetClassName() const override { return "Dots"; }
+    Object *Clone() const override { return new Dots(*this); }
     ///@}
 
     /** Override the method since alignment is required */
     bool HasToBeAligned() const override { return true; }
 
-    std::set<int> GetDotLocsForStaff(Staff *staff) const;
-    std::set<int> &ModifyDotLocsForStaff(Staff *staff);
+    std::set<int> GetDotLocsForStaff(const Staff *staff) const;
+    std::set<int> &ModifyDotLocsForStaff(const Staff *staff);
 
     const MapOfDotLocs &GetMapOfDotLocs() const { return m_dotLocsByStaff; }
     void SetMapOfDotLocs(const MapOfDotLocs &dotLocs) { m_dotLocsByStaff = dotLocs; };
@@ -70,9 +71,9 @@ public:
     ///@}
 
     /**
-     * See Object::ResetDrawing
+     * See Object::ResetData
      */
-    int ResetDrawing(FunctorParams *functorParams) override;
+    int ResetData(FunctorParams *functorParams) override;
 
     /**
      * See Object::ResetHorizontalAlignment
@@ -111,6 +112,7 @@ public:
     virtual ~Flag();
     void Reset() override;
     std::string GetClassName() const override { return "Flag"; }
+    Object *Clone() const override { return new Flag(*this); }
     ///@}
 
     /** Override the method since alignment is required */
@@ -118,8 +120,8 @@ public:
 
     wchar_t GetFlagGlyph(data_STEMDIRECTION stemDir) const;
 
-    Point GetStemUpSE(Doc *doc, int staffSize, bool graceSize, wchar_t &code) const;
-    Point GetStemDownNW(Doc *doc, int staffSize, bool graceSize, wchar_t &code) const;
+    Point GetStemUpSE(const Doc *doc, int staffSize, bool graceSize) const;
+    Point GetStemDownNW(const Doc *doc, int staffSize, bool graceSize) const;
 
     //----------//
     // Functors //
@@ -134,9 +136,9 @@ public:
     ///@}
 
     /**
-     * See Object::ResetDrawing
+     * See Object::ResetData
      */
-    int ResetDrawing(FunctorParams *functorParams) override;
+    int ResetData(FunctorParams *functorParams) override;
 
 private:
     //
@@ -169,26 +171,31 @@ public:
     ///@}
 
     /**
-     * @name Setter and getter for darwing rel positions
+     * @name Setter and getter for drawing rel positions
      */
     ///@{
-    int GetDrawingXRelLeft() { return m_drawingXRelLeft; }
+    int GetDrawingXRelLeft() const { return m_drawingXRelLeft; }
     void SetDrawingXRelLeft(int drawingXRelLeft) { m_drawingXRelLeft = drawingXRelLeft; }
-    int GetDrawingXRelRight() { return m_drawingXRelRight; }
+    int GetDrawingXRelRight() const { return m_drawingXRelRight; }
     void SetDrawingXRelRight(int drawingXRelRight) { m_drawingXRelRight = drawingXRelRight; }
+    // Vertical positions
+    int GetDrawingYRelLeft() const { return m_drawingYRelLeft; }
+    void SetDrawingYRelLeft(int drawingYRelLeft) { m_drawingYRelLeft = drawingYRelLeft; }
+    int GetDrawingYRelRight() const { return m_drawingYRelRight; }
+    void SetDrawingYRelRight(int drawingYRelRight) { m_drawingYRelRight = drawingYRelRight; }
     ///@}
 
     /**
-     * @name Setter and getter for darwing positions.
+     * @name Setter and getter for drawing positions.
      * Takes into account:
      * - the position of the first and last element.
      * - the position of the beam if aligned with a beam.
      */
     ///@{
-    int GetDrawingXLeft();
-    int GetDrawingXRight();
-    int GetDrawingYLeft();
-    int GetDrawingYRight();
+    int GetDrawingXLeft() const;
+    int GetDrawingXRight() const;
+    int GetDrawingYLeft() const;
+    int GetDrawingYRight() const;
     ///@}
 
     /**
@@ -196,6 +203,7 @@ public:
      */
     ///@{
     TupletNum *GetAlignedNum() { return m_alignedNum; }
+    const TupletNum *GetAlignedNum() const { return m_alignedNum; }
     void SetAlignedNum(TupletNum *alignedNum) { m_alignedNum = alignedNum; }
     ///@}
 
@@ -236,6 +244,14 @@ private:
      * The right X position is the one of the last Chord / Note / Rest in the tuplet
      */
     int m_drawingXRelRight;
+    /**
+     * The YRel shift for the left X position.
+     */
+    int m_drawingYRelLeft = 0;
+    /**
+     * The YRel shift for the right X position.
+     */
+    int m_drawingYRelRight = 0;
     /** A pointer to the num with which the TupletBracket is aligned (if any) */
     TupletNum *m_alignedNum;
 };
@@ -269,8 +285,8 @@ public:
      * - the position of the beam if aligned with a beam.
      */
     ///@{
-    int GetDrawingYMid();
-    int GetDrawingXMid(Doc *doc = NULL);
+    int GetDrawingYMid() const;
+    int GetDrawingXMid(const Doc *doc = NULL) const;
     ///@}
 
     /**
@@ -278,6 +294,7 @@ public:
      */
     ///@{
     TupletBracket *GetAlignedBracket() { return m_alignedBracket; }
+    const TupletBracket *GetAlignedBracket() const { return m_alignedBracket; }
     void SetAlignedBracket(TupletBracket *alignedBracket);
     ///@}
 
@@ -330,6 +347,7 @@ public:
     virtual ~Stem();
     void Reset() override;
     std::string GetClassName() const override { return "Stem"; }
+    Object *Clone() const override { return new Stem(*this); }
     ///@}
 
     /** Override the method since alignment is required */
@@ -344,10 +362,13 @@ public:
      * @name Setter and getter for darwing stem direction and length
      */
     ///@{
-    data_STEMDIRECTION GetDrawingStemDir() { return m_drawingStemDir; }
+    data_STEMDIRECTION GetDrawingStemDir() const { return m_drawingStemDir; }
     void SetDrawingStemDir(data_STEMDIRECTION drawingStemDir) { m_drawingStemDir = drawingStemDir; }
-    int GetDrawingStemLen() { return m_drawingStemLen; }
+    int GetDrawingStemLen() const { return m_drawingStemLen; }
     void SetDrawingStemLen(int drawingStemLen) { m_drawingStemLen = drawingStemLen; }
+    int GetDrawingStemAdjust() const { return m_drawingStemAdjust; }
+    void SetDrawingStemAdjust(int drawingStemAdjust) { m_drawingStemAdjust = drawingStemAdjust; }
+    int GetStemModRelY() const { return m_stemModRelY; }
     ///@}
 
     /**
@@ -361,7 +382,12 @@ public:
     /**
      * Helper to adjust overlaping layers for stems
      */
-    int CompareToElementPosition(Doc *doc, LayerElement *otherElement, int margin);
+    int CompareToElementPosition(const Doc *doc, const LayerElement *otherElement, int margin) const;
+
+    /**
+     * Helper to calculate stem modifier relative Y rel and required adjustment for stem length
+     */
+    int CalculateStemModAdjustment(const Doc *doc, const Staff *staff, int flagOffset = 0);
 
     //----------//
     // Functors //
@@ -381,15 +407,25 @@ public:
     ///@}
 
     /**
-     * See Object::ResetDrawing
+     * See Object::ResetData
      */
-    int ResetDrawing(FunctorParams *functorParams) override;
+    int ResetData(FunctorParams *functorParams) override;
 
 private:
     /**
      * Addjusts flag placement and stem length if they are crossing notehead or ledger lines
      */
-    void AdjustFlagPlacement(Doc *doc, Flag *flag, int staffSize, int verticalCenter, int duration);
+    void AdjustFlagPlacement(const Doc *doc, Flag *flag, int staffSize, int verticalCenter, int duration);
+
+    /**
+     * Helper to adjust length of stem based on presence of slashes
+     */
+    int AdjustSlashes(const Doc *doc, const Staff *staff, int flagOffset) const;
+
+    /**
+     * Helper to calculate relative position for the stem modifier
+     */
+    void CalculateStemModRelY(const Doc *doc, const Staff *staff);
 
 public:
     //
@@ -402,6 +438,14 @@ private:
      * The drawing length of stem
      */
     int m_drawingStemLen;
+    /**
+     * Relative Y position for the stem modifier
+     */
+    int m_stemModRelY;
+    /**
+     * The adjustment of the drawing stem length (used with french style of beams)
+     */
+    int m_drawingStemAdjust;
     /**
      * A flag indicating if a stem if virtual and should never be rendered.
      * Virtual stems are added to whole notes (and longer) for position calculation and

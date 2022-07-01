@@ -25,7 +25,7 @@ static const ClassRegistrar<Lv> s_factory("lv", LV);
 
 Lv::Lv() : Tie(LV, "lv-")
 {
-    Reset();
+    this->Reset();
 }
 
 Lv::~Lv() {}
@@ -35,7 +35,7 @@ void Lv::Reset()
     Tie::Reset();
 }
 
-bool Lv::CalculatePosition(Doc *doc, Staff *staff, int x1, int x2, int spanningType, Point bezier[4])
+bool Lv::CalculatePosition(const Doc *doc, const Staff *staff, int x1, int x2, int spanningType, Point bezier[4])
 {
     if (spanningType != SPANNING_START_END) {
         //  this makes no sense
@@ -43,8 +43,8 @@ bool Lv::CalculatePosition(Doc *doc, Staff *staff, int x1, int x2, int spanningT
         return false;
     }
 
-    LayerElement *start = GetStart();
-    LayerElement *end = GetEnd();
+    LayerElement *start = this->GetStart();
+    LayerElement *end = this->GetEnd();
     if (start->GetFirstAncestor(MEASURE) != end->GetFirstAncestor(MEASURE)) {
         //  this makes no sense
         LogWarning("Lv across measures is not supported. Use <tie> instead.");

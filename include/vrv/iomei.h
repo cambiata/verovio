@@ -33,6 +33,7 @@ class Arpeg;
 class Artic;
 class BarLine;
 class Beam;
+class BeamSpan;
 class BeatRpt;
 class BracketSpan;
 class Breath;
@@ -74,6 +75,7 @@ class InstrDef;
 class Label;
 class LabelAbbr;
 class Layer;
+class LayerDef;
 class LayerElement;
 class Lb;
 class Lem;
@@ -215,9 +217,9 @@ public:
     bool HasFilter() const;
     void SetFirstPage(int page);
     void SetLastPage(int page);
-    void SetFirstMeasure(const std::string &uuid);
-    void SetLastMeasure(const std::string &uuid);
-    void SetMdiv(const std::string &uuid);
+    void SetFirstMeasure(const std::string &id);
+    void SetLastMeasure(const std::string &id);
+    void SetMdiv(const std::string &id);
     void ResetFilter();
     ///@}
 
@@ -289,6 +291,11 @@ private:
     bool WriteDoc(Doc *doc);
 
     /**
+     * Write revisionDesc to the header
+     */
+    void WriteRevisionDesc(pugi::xml_node meiHead);
+
+    /**
      * Write the @xml:id to the currentNode
      */
     void WriteXmlId(pugi::xml_node currentNode, Object *object);
@@ -333,6 +340,7 @@ private:
     void WriteInstrDef(pugi::xml_node currentNode, InstrDef *instrDef);
     void WriteLabel(pugi::xml_node currentNode, Label *label);
     void WriteLabelAbbr(pugi::xml_node currentNode, LabelAbbr *labelAbbr);
+    void WriteLayerDef(pugi::xml_node currentNode, LayerDef *layerDef);
     void WriteTuning(pugi::xml_node currentNode, Tuning *tuning);
     void WriteCourse(pugi::xml_node currentNode, Course *course);
     void WriteMeasure(pugi::xml_node currentNode, Measure *measure);
@@ -390,6 +398,7 @@ private:
     ///@{
     void WriteAnchoredText(pugi::xml_node currentNode, AnchoredText *anchoredText);
     void WriteArpeg(pugi::xml_node currentNode, Arpeg *arpeg);
+    void WriteBeamSpan(pugi::xml_node currentNode, BeamSpan *beamSpan);
     void WriteBracketSpan(pugi::xml_node currentNode, BracketSpan *bracketSpan);
     void WriteBreath(pugi::xml_node currentNode, Breath *breath);
     void WriteCaesura(pugi::xml_node currentNode, Caesura *caesura);
@@ -504,7 +513,7 @@ private:
 
     /** @name Methods for converting members into MEI attributes. */
     ///@{
-    std::string UuidToMeiStr(Object *element);
+    std::string IDToMeiStr(Object *element);
     std::string DocTypeToStr(DocType type);
     ///@}
 
@@ -533,10 +542,10 @@ private:
     int m_firstPage;
     int m_currentPage;
     int m_lastPage;
-    std::string m_firstMeasureUuid;
-    std::string m_lastMeasureUuid;
+    std::string m_firstMeasureID;
+    std::string m_lastMeasureID;
     RangeMatchLocation m_measureFilterMatchLocation;
-    std::string m_mdivUuid;
+    std::string m_mdivID;
     MatchLocation m_mdivFilterMatchLocation;
     ///@}
 
@@ -633,6 +642,8 @@ private:
     bool ReadStaff(Object *parent, pugi::xml_node staff);
     bool ReadStaffChildren(Object *parent, pugi::xml_node parentNode);
     bool ReadLayer(Object *parent, pugi::xml_node layer);
+    bool ReadLayerDef(Object *parent, pugi::xml_node layerDef);
+    bool ReadLayerDefChildren(Object *parent, pugi::xml_node parentNode);
     bool ReadLayerChildren(Object *parent, pugi::xml_node parentNode, Object *filter = NULL);
     bool ReadTextChildren(Object *parent, pugi::xml_node parentNode, Object *filter = NULL);
     ///@}
@@ -686,6 +697,7 @@ private:
     ///@{
     bool ReadAnchoredText(Object *parent, pugi::xml_node anchoredText);
     bool ReadArpeg(Object *parent, pugi::xml_node arpeg);
+    bool ReadBeamSpan(Object *parent, pugi::xml_node beamSpan);
     bool ReadBracketSpan(Object *parent, pugi::xml_node bracketSpan);
     bool ReadBreath(Object *parent, pugi::xml_node breath);
     bool ReadCaesura(Object *parent, pugi::xml_node caesura);
@@ -785,7 +797,6 @@ private:
     ///@{
     bool ReadFacsimile(Doc *doc, pugi::xml_node facsimile);
     bool ReadSurface(Facsimile *parent, pugi::xml_node surface);
-    bool ReadBeamSpanAsBeam(Measure *measure, pugi::xml_node beamSpan);
     bool ReadTupletSpanAsTuplet(Measure *measure, pugi::xml_node tupletSpan);
     bool ReadZone(Surface *parent, pugi::xml_node zone);
     ///@}
@@ -801,6 +812,11 @@ private:
     bool IsEditorialElementName(std::string elementName);
 
     /**
+     * Normalize attributes of xmlElement, removing white spaces if necessary
+     */
+    void NormalizeAttributes(pugi::xml_node &xmlElement);
+
+    /**
      * Read score-based MEI.
      * The data is read into an object, which is then converted to page-based MEI.
      * See MEIInput::ReadDoc, Doc::CreateScoreBuffer and Doc::ConvertToPageBasedDoc
@@ -811,7 +827,7 @@ private:
      * @name Various methods for reading / converting values.
      */
     ///@{
-    void SetMeiUuid(pugi::xml_node element, Object *object);
+    void SetMeiID(pugi::xml_node element, Object *object);
     DocType StrToDocType(std::string type);
     std::wstring LeftTrim(std::wstring str);
     std::wstring RightTrim(std::wstring str);

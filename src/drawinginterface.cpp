@@ -18,8 +18,16 @@
 #include "layerelement.h"
 #include "note.h"
 #include "object.h"
+#include "staff.h"
 
 namespace vrv {
+
+// helper for determining note direction
+data_STEMDIRECTION GetNoteDirection(int leftNoteY, int rightNoteY)
+{
+    if (leftNoteY == rightNoteY) return STEMDIRECTION_NONE;
+    return (leftNoteY < rightNoteY) ? STEMDIRECTION_up : STEMDIRECTION_down;
+}
 
 //----------------------------------------------------------------------------
 // DrawingListInterface
@@ -27,7 +35,7 @@ namespace vrv {
 
 DrawingListInterface::DrawingListInterface()
 {
-    Reset();
+    this->Reset();
 }
 
 DrawingListInterface::~DrawingListInterface() {}
@@ -67,7 +75,7 @@ void DrawingListInterface::ResetDrawingList()
 
 BeamDrawingInterface::BeamDrawingInterface() : ObjectListInterface()
 {
-    Reset();
+    this->Reset();
 }
 
 BeamDrawingInterface::~BeamDrawingInterface()
@@ -84,6 +92,7 @@ void BeamDrawingInterface::Reset()
     m_fractionSize = 100;
     m_crossStaffContent = NULL;
     m_crossStaffRel = STAFFREL_basic_NONE;
+    m_isSpanningElement = false;
     m_shortestDur = 0;
     m_notesStemDir = STEMDIRECTION_NONE;
     m_drawingPlace = BEAMPLACE_NONE;
@@ -108,14 +117,20 @@ void BeamDrawingInterface::ClearCoords()
     m_beamElementCoords.clear();
 }
 
-void BeamDrawingInterface::InitCoords(ArrayOfObjects *childList, Staff *staff, data_BEAMPLACE place)
+void BeamDrawingInterface::InitCoords(const ArrayOfObjects &childList, Staff *staff, data_BEAMPLACE place)
+{
+    ListOfObjects children(childList.begin(), childList.end());
+    this->InitCoords(children, staff, place);
+}
+
+void BeamDrawingInterface::InitCoords(const ListOfObjects &childList, Staff *staff, data_BEAMPLACE place)
 {
     assert(staff);
 
     BeamDrawingInterface::Reset();
     ClearCoords();
 
-    if (childList->empty()) {
+    if (childList.empty()) {
         return;
     }
 
@@ -124,14 +139,14 @@ void BeamDrawingInterface::InitCoords(ArrayOfObjects *childList, Staff *staff, d
     // duration variables
     int lastDur, currentDur;
 
-    m_beamElementCoords.reserve(childList->size());
+    m_beamElementCoords.reserve(childList.size());
     int i;
-    for (i = 0; i < (int)childList->size(); ++i) {
+    for (i = 0; i < (int)childList.size(); ++i) {
         m_beamElementCoords.push_back(new BeamElementCoord());
     }
 
     // current point to the first Note in the layed out layer
-    LayerElement *current = dynamic_cast<LayerElement *>(childList->front());
+    LayerElement *current = dynamic_cast<LayerElement *>(childList.front());
     // Beam list should contain only DurationInterface objects
     assert(current->GetDurationInterface());
 
@@ -147,7 +162,7 @@ void BeamDrawingInterface::InitCoords(ArrayOfObjects *childList, Staff *staff, d
 
     int elementCount = 0;
 
-    ArrayOfObjects::iterator iter = childList->begin();
+    ListOfObjects::const_iterator iter = childList.begin();
     do {
         // Beam list should contain only DurationInterface objects
         assert(current->GetDurationInterface());
@@ -189,8 +204,8 @@ void BeamDrawingInterface::InitCoords(ArrayOfObjects *childList, Staff *staff, d
             // Look at the stemDir to see if we have multiple stem Dir
             if (!m_hasMultipleStemDir) {
                 // At this stage, BeamCoord::m_stem is not necessary set, so we need to look at the Note / Chord
-                // original value Example: IsInBeam called in Note::PrepareLayerElementParts when reaching the first
-                // note of the beam
+                // original value Example: GetAncestorBeam called in Note::PrepareLayerElementParts when reaching the
+                // first note of the beam
                 currentStemDir = m_beamElementCoords.at(elementCount)->GetStemDir();
                 if (currentStemDir != STEMDIRECTION_NONE) {
                     if ((m_notesStemDir != STEMDIRECTION_NONE) && (m_notesStemDir != currentStemDir)) {
@@ -216,7 +231,7 @@ void BeamDrawingInterface::InitCoords(ArrayOfObjects *childList, Staff *staff, d
         elementCount++;
 
         ++iter;
-        if (iter == childList->end()) {
+        if (iter == childList.end()) {
             break;
         }
         current = dynamic_cast<LayerElement *>(*iter);
@@ -253,13 +268,13 @@ void BeamDrawingInterface::InitCue(bool beamCue)
     }
 }
 
-bool BeamDrawingInterface::IsHorizontal()
+bool BeamDrawingInterface::IsHorizontal() const
 {
     if (this->IsRepeatedPattern()) {
         return true;
     }
 
-    if (HasOneStepHeight()) return true;
+    if (this->HasOneStepHeight()) return true;
 
     // if (m_drawingPlace == BEAMPLACE_mixed) return true;
 
@@ -268,14 +283,16 @@ bool BeamDrawingInterface::IsHorizontal()
     int elementCount = (int)m_beamElementCoords.size();
 
     std::vector<int> items;
+    std::vector<data_BEAMPLACE> directions;
     items.reserve(m_beamElementCoords.size());
+    directions.reserve(m_beamElementCoords.size());
 
-    int i;
-    for (i = 0; i < elementCount; ++i) {
+    for (int i = 0; i < elementCount; ++i) {
         BeamElementCoord *coord = m_beamElementCoords.at(i);
         if (!coord->m_stem || !coord->m_closestNote) continue;
 
         items.push_back(coord->m_closestNote->GetDrawingY());
+        directions.push_back(coord->m_beamRelativePlace);
     }
     int itemCount = (int)items.size();
 
@@ -287,24 +304,25 @@ bool BeamDrawingInterface::IsHorizontal()
     // First note and last note have the same postion
     if (first == last) return true;
 
-    // Detect concave shapes
-    for (i = 1; i < itemCount - 1; ++i) {
-        if (m_drawingPlace == BEAMPLACE_above) {
-            if ((items.at(i) > first) && (items.at(i) > last)) return true;
-        }
-        else {
-            if ((items.at(i) < first) && (items.at(i) < last)) return true;
-        }
-    }
+    // If drawing place is mixed and is should be drawn horizontal based on mixed rules
+    if ((m_drawingPlace == BEAMPLACE_mixed) && (this->IsHorizontalMixedBeam(items, directions))) return true;
 
     // Detect beam with two pitches only and as step at the beginning or at the end
     const bool firstStep = (first != items.at(1));
     const bool lastStep = (last != items.at(items.size() - 2));
     if ((items.size() > 2) && (firstStep || lastStep)) {
+        // Detect concave shapes
+        for (int i = 1; i < itemCount - 1; ++i) {
+            if (m_drawingPlace == BEAMPLACE_above) {
+                if ((items.at(i) >= first) && (items.at(i) >= last)) return true;
+            }
+            else if (m_drawingPlace == BEAMPLACE_below) {
+                if ((items.at(i) <= first) && (items.at(i) <= last)) return true;
+            }
+        }
         std::vector<int> pitches;
         std::unique_copy(items.begin(), items.end(), std::back_inserter(pitches));
         if (pitches.size() == 2) {
-            // if (firstStep)
             if (m_drawingPlace == BEAMPLACE_above) {
                 // Single note at the beginning as lower first
                 if (firstStep && (std::is_sorted(items.begin(), items.end()))) return true;
@@ -323,7 +341,58 @@ bool BeamDrawingInterface::IsHorizontal()
     return false;
 }
 
-bool BeamDrawingInterface::IsRepeatedPattern()
+bool BeamDrawingInterface::IsHorizontalMixedBeam(
+    const std::vector<int> &items, const std::vector<data_BEAMPLACE> &directions) const
+{
+    // items and directions should be of the same size, otherwise something is wrong
+    if (items.size() != directions.size()) return false;
+
+    // calculate how many times stem direction is changed withing the beam
+    int directionChanges = 0;
+    data_BEAMPLACE previous = directions.front();
+    std::for_each(directions.begin(), directions.end(), [&previous, &directionChanges](data_BEAMPLACE current) {
+        if (current != previous) {
+            ++directionChanges;
+            previous = current;
+        }
+    });
+    // if we have a mix of cross-staff elements, going from one staff to another repeatedly, we need to check note
+    // directions. Otherwise we can use direction of the outside pitches for beam
+    if (directionChanges <= 1) return false;
+
+    int previousTop = VRV_UNSET;
+    int previousBottom = VRV_UNSET;
+    data_STEMDIRECTION outsidePitchDirection = GetNoteDirection(items.front(), items.back());
+    std::map<data_STEMDIRECTION, int> beamDirections{ { STEMDIRECTION_NONE, 0 }, { STEMDIRECTION_up, 0 },
+        { STEMDIRECTION_down, 0 } };
+    for (int i = 0; i < (int)items.size(); ++i) {
+        if (directions[i] == BEAMPLACE_above) {
+            if (previousTop == VRV_UNSET) {
+                previousTop = items[i];
+            }
+            else {
+                ++beamDirections[GetNoteDirection(previousTop, items[i])];
+            }
+        }
+        else if (directions[i] == BEAMPLACE_below) {
+            if (previousBottom == VRV_UNSET) {
+                previousBottom = items[i];
+            }
+            else {
+                ++beamDirections[GetNoteDirection(previousBottom, items[i])];
+            }
+        }
+    }
+    // if direction of beam outside pitches corresponds to majority of the note directions within the beam, beam
+    // can be drawn in that direction. Otherwise horizontal beam should be used
+    bool result = std::any_of(
+        beamDirections.begin(), beamDirections.end(), [&beamDirections, &outsidePitchDirection](const auto &pair) {
+            return (pair.first == outsidePitchDirection) ? false : pair.second > beamDirections[outsidePitchDirection];
+        });
+    return result;
+}
+
+bool BeamDrawingInterface::IsRepeatedPattern() const
 {
     if (m_drawingPlace == BEAMPLACE_mixed) return false;
 
@@ -381,7 +450,7 @@ bool BeamDrawingInterface::IsRepeatedPattern()
     return false;
 }
 
-bool BeamDrawingInterface::HasOneStepHeight()
+bool BeamDrawingInterface::HasOneStepHeight() const
 {
     if (m_shortestDur < DUR_32) return false;
 
@@ -400,7 +469,7 @@ bool BeamDrawingInterface::HasOneStepHeight()
     return (abs(top - bottom) <= 1);
 }
 
-bool BeamDrawingInterface::IsFirstIn(Object *object, LayerElement *element)
+bool BeamDrawingInterface::IsFirstIn(const Object *object, const LayerElement *element) const
 {
     this->GetList(object);
     int position = this->GetPosition(object, element);
@@ -411,9 +480,9 @@ bool BeamDrawingInterface::IsFirstIn(Object *object, LayerElement *element)
     return false;
 }
 
-bool BeamDrawingInterface::IsLastIn(Object *object, LayerElement *element)
+bool BeamDrawingInterface::IsLastIn(const Object *object, const LayerElement *element) const
 {
-    int size = (int)this->GetList(object)->size();
+    const int size = this->GetListSize(object);
     int position = this->GetPosition(object, element);
     // This method should be called only if the note is part of a beam
     assert(position != -1);
@@ -422,18 +491,62 @@ bool BeamDrawingInterface::IsLastIn(Object *object, LayerElement *element)
     return false;
 }
 
-int BeamDrawingInterface::GetPosition(Object *object, LayerElement *element)
+int BeamDrawingInterface::GetPosition(const Object *object, const LayerElement *element) const
 {
     this->GetList(object);
     int position = this->GetListIndex(element);
     // Check if this is a note in the chord
     if ((position == -1) && (element->Is(NOTE))) {
-        Note *note = vrv_cast<Note *>(element);
+        const Note *note = vrv_cast<const Note *>(element);
         assert(note);
-        Chord *chord = note->IsChordTone();
+        const Chord *chord = note->IsChordTone();
         if (chord) position = this->GetListIndex(chord);
     }
     return position;
+}
+
+void BeamDrawingInterface::GetBeamOverflow(StaffAlignment *&above, StaffAlignment *&below) const
+{
+    if (!m_beamStaff || !m_crossStaffContent) return;
+
+    if (m_drawingPlace == BEAMPLACE_mixed) {
+        above = NULL;
+        below = NULL;
+    }
+    // Beam below - ignore above and find the appropriate below staff
+    else if (m_drawingPlace == BEAMPLACE_below) {
+        above = NULL;
+        if (m_crossStaffRel == STAFFREL_basic_above) {
+            below = m_beamStaff->GetAlignment();
+        }
+        else {
+            below = m_crossStaffContent->GetAlignment();
+        }
+    }
+    // Beam above - ignore below and find the appropriate above staff
+    else if (m_drawingPlace == BEAMPLACE_above) {
+        below = NULL;
+        if (m_crossStaffRel == STAFFREL_basic_below) {
+            above = m_beamStaff->GetAlignment();
+        }
+        else {
+            above = m_crossStaffContent->GetAlignment();
+        }
+    }
+}
+
+void BeamDrawingInterface::GetBeamChildOverflow(StaffAlignment *&above, StaffAlignment *&below) const
+{
+    if (m_beamStaff && m_crossStaffContent) {
+        if (m_crossStaffRel == STAFFREL_basic_above) {
+            above = m_crossStaffContent->GetAlignment();
+            below = m_beamStaff->GetAlignment();
+        }
+        else {
+            above = m_beamStaff->GetAlignment();
+            below = m_crossStaffContent->GetAlignment();
+        }
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -442,7 +555,7 @@ int BeamDrawingInterface::GetPosition(Object *object, LayerElement *element)
 
 StaffDefDrawingInterface::StaffDefDrawingInterface()
 {
-    Reset();
+    this->Reset();
 }
 
 StaffDefDrawingInterface::~StaffDefDrawingInterface() {}
@@ -462,7 +575,7 @@ void StaffDefDrawingInterface::Reset()
     m_drawMeterSigGrp = false;
 }
 
-void StaffDefDrawingInterface::SetCurrentClef(Clef const *clef)
+void StaffDefDrawingInterface::SetCurrentClef(const Clef *clef)
 {
     if (clef) {
         m_currentClef = *clef;
@@ -470,19 +583,26 @@ void StaffDefDrawingInterface::SetCurrentClef(Clef const *clef)
     }
 }
 
-void StaffDefDrawingInterface::SetCurrentKeySig(KeySig const *keySig)
+void StaffDefDrawingInterface::SetCurrentKeySig(const KeySig *keySig)
 {
     if (keySig) {
-        char drawingCancelAccidCount = m_currentKeySig.GetAccidCount();
-        data_ACCIDENTAL_WRITTEN drawingCancelAccidType = m_currentKeySig.GetAccidType();
+        const bool ignoreCancel
+            = (m_currentKeySig.HasNonAttribKeyAccidChildren() || keySig->HasNonAttribKeyAccidChildren());
+        const int drawingCancelAccidCount = m_currentKeySig.GetAccidCount();
+        const data_ACCIDENTAL_WRITTEN drawingCancelAccidType = m_currentKeySig.GetAccidType();
         m_currentKeySig = *keySig;
         m_currentKeySig.CloneReset();
-        m_currentKeySig.m_drawingCancelAccidCount = drawingCancelAccidCount;
-        m_currentKeySig.m_drawingCancelAccidType = drawingCancelAccidType;
+        if (ignoreCancel) {
+            m_currentKeySig.m_skipCancellation = true;
+        }
+        else {
+            m_currentKeySig.m_drawingCancelAccidCount = drawingCancelAccidCount;
+            m_currentKeySig.m_drawingCancelAccidType = drawingCancelAccidType;
+        }
     }
 }
 
-void StaffDefDrawingInterface::SetCurrentMensur(Mensur const *mensur)
+void StaffDefDrawingInterface::SetCurrentMensur(const Mensur *mensur)
 {
     if (mensur) {
         m_currentMensur = *mensur;
@@ -490,7 +610,7 @@ void StaffDefDrawingInterface::SetCurrentMensur(Mensur const *mensur)
     }
 }
 
-void StaffDefDrawingInterface::SetCurrentMeterSig(MeterSig const *meterSig)
+void StaffDefDrawingInterface::SetCurrentMeterSig(const MeterSig *meterSig)
 {
     if (meterSig) {
         m_currentMeterSig = *meterSig;
@@ -498,7 +618,7 @@ void StaffDefDrawingInterface::SetCurrentMeterSig(MeterSig const *meterSig)
     }
 }
 
-void StaffDefDrawingInterface::SetCurrentMeterSigGrp(MeterSigGrp const *meterSigGrp)
+void StaffDefDrawingInterface::SetCurrentMeterSigGrp(const MeterSigGrp *meterSigGrp)
 {
     if (meterSigGrp) {
         m_currentMeterSigGrp = *meterSigGrp;
@@ -506,21 +626,22 @@ void StaffDefDrawingInterface::SetCurrentMeterSigGrp(MeterSigGrp const *meterSig
     }
 }
 
-bool StaffDefDrawingInterface::DrawMeterSigGrp()
+bool StaffDefDrawingInterface::DrawMeterSigGrp() const
 {
     if (m_drawMeterSigGrp) {
-        const ArrayOfObjects *childList = m_currentMeterSigGrp.GetList(&m_currentMeterSigGrp);
-        if (childList->size() > 1) return true;
+        const int childListSize = m_currentMeterSigGrp.GetListSize(&m_currentMeterSigGrp);
+        if (childListSize > 1) return true;
     }
     return false;
 }
 
-void StaffDefDrawingInterface::AlternateCurrentMeterSig(Measure *measure)
+void StaffDefDrawingInterface::AlternateCurrentMeterSig(const Measure *measure)
 {
-    if (MeterSigGrp *meterSigGrp = GetCurrentMeterSigGrp(); meterSigGrp->GetFunc() == meterSigGrpLog_FUNC_alternating) {
+    if (MeterSigGrp *meterSigGrp = this->GetCurrentMeterSigGrp();
+        meterSigGrp->GetFunc() == meterSigGrpLog_FUNC_alternating) {
         meterSigGrp->SetMeasureBasedCount(measure);
         MeterSig *meter = meterSigGrp->GetSimplifiedMeterSig();
-        SetCurrentMeterSig(meter);
+        this->SetCurrentMeterSig(meter);
         delete meter;
     }
 }
@@ -531,7 +652,7 @@ void StaffDefDrawingInterface::AlternateCurrentMeterSig(Measure *measure)
 
 StemmedDrawingInterface::StemmedDrawingInterface()
 {
-    Reset();
+    this->Reset();
 }
 
 StemmedDrawingInterface::~StemmedDrawingInterface() {}
@@ -551,7 +672,7 @@ void StemmedDrawingInterface::SetDrawingStemDir(data_STEMDIRECTION stemDir)
     if (m_drawingStem) m_drawingStem->SetDrawingStemDir(stemDir);
 }
 
-data_STEMDIRECTION StemmedDrawingInterface::GetDrawingStemDir()
+data_STEMDIRECTION StemmedDrawingInterface::GetDrawingStemDir() const
 {
     if (m_drawingStem) return m_drawingStem->GetDrawingStemDir();
     return STEMDIRECTION_NONE;
@@ -562,38 +683,44 @@ void StemmedDrawingInterface::SetDrawingStemLen(int stemLen)
     if (m_drawingStem) m_drawingStem->SetDrawingStemLen(stemLen);
 }
 
-int StemmedDrawingInterface::GetDrawingStemLen()
+int StemmedDrawingInterface::GetDrawingStemLen() const
 {
     if (m_drawingStem) return m_drawingStem->GetDrawingStemLen();
     return 0;
 }
 
-Point StemmedDrawingInterface::GetDrawingStemStart(Object *object)
+int StemmedDrawingInterface::GetDrawingStemModRelY() const
+{
+    if (m_drawingStem) return m_drawingStem->GetStemModRelY();
+    return 0;
+}
+
+Point StemmedDrawingInterface::GetDrawingStemStart(const Object *object) const
 {
     assert(m_drawingStem || object);
     if (object && !m_drawingStem) {
-        assert(this == dynamic_cast<StemmedDrawingInterface *>(object));
+        assert(this == object->GetStemmedDrawingInterface());
         return Point(object->GetDrawingX(), object->GetDrawingY());
     }
     return Point(m_drawingStem->GetDrawingX(), m_drawingStem->GetDrawingY());
 }
 
-Point StemmedDrawingInterface::GetDrawingStemEnd(Object *object)
+Point StemmedDrawingInterface::GetDrawingStemEnd(const Object *object) const
 {
     assert(m_drawingStem || object);
     if (object && !m_drawingStem) {
-        assert(this == dynamic_cast<StemmedDrawingInterface *>(object));
+        assert(this == object->GetStemmedDrawingInterface());
         if (!m_drawingStem) {
-            // Somehow arbitrary for chord - stem end it the bottom with no stem
+            // Somehow arbitrary for chord with no stem - stem end is the bottom
             if (object->Is(CHORD)) {
-                Chord *chord = vrv_cast<Chord *>(object);
+                const Chord *chord = vrv_cast<const Chord *>(object);
                 assert(chord);
                 return Point(object->GetDrawingX(), chord->GetYBottom());
             }
             return Point(object->GetDrawingX(), object->GetDrawingY());
         }
     }
-    return Point(m_drawingStem->GetDrawingX(), m_drawingStem->GetDrawingY() - GetDrawingStemLen());
+    return Point(m_drawingStem->GetDrawingX(), m_drawingStem->GetDrawingY() - this->GetDrawingStemLen());
 }
 
 } // namespace vrv

@@ -37,6 +37,17 @@ public:
     ///@}
 
     /**
+     * @name Getter to interfaces
+     */
+    ///@{
+    BeamDrawingInterface *GetBeamDrawingInterface() override { return vrv_cast<BeamDrawingInterface *>(this); }
+    const BeamDrawingInterface *GetBeamDrawingInterface() const override
+    {
+        return vrv_cast<const BeamDrawingInterface *>(this);
+    }
+    ///@}
+
+    /**
      * Add an element (a note or a chord) to a fTrem.
      * Only Note or Chord elements will be actually added to the fTrem.
      */
@@ -47,9 +58,29 @@ public:
      */
     const ArrayOfBeamElementCoords *GetElementCoords();
 
+    /**
+     * See DrawingInterface::GetAdditionalBeamCount
+     */
+    std::pair<int, int> GetAdditionalBeamCount() const override;
+
+    /**
+     * See DrawingInterface::GetFloatingBeamCount
+     */
+    std::pair<int, int> GetFloatingBeamCount() const override;
+
     //----------//
     // Functors //
     //----------//
+
+    /**
+     * See Object::AdjustBeams
+     */
+    int AdjustBeams(FunctorParams *functorParams) override;
+
+    /**
+     * See Object::AdjustBeamsEnd
+     */
+    int AdjustBeamsEnd(FunctorParams *functorParams) override;
 
     /**
      * See Object::CalcStem
@@ -57,9 +88,9 @@ public:
     int CalcStem(FunctorParams *functorParams) override;
 
     /**
-     * See Object::ResetDrawing
+     * See Object::ResetData
      */
-    int ResetDrawing(FunctorParams *functorParams) override;
+    int ResetData(FunctorParams *functorParams) override;
 
     /**
      * See Object::GenerateMIDI
@@ -72,7 +103,12 @@ protected:
     /**
      * Filter the flat list and keep only Note or Chords elements.
      */
-    void FilterList(ArrayOfObjects *childList) override;
+    void FilterList(ListOfConstObjects &childList) const override;
+
+    /**
+     * See LayerElement::SetElementShortening
+     */
+    void SetElementShortening(int shortening) override;
 
 public:
     /** */

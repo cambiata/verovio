@@ -35,12 +35,12 @@ static const ClassRegistrar<Verse> s_factory("verse", VERSE);
 
 Verse::Verse() : LayerElement(VERSE, "verse-"), AttColor(), AttLang(), AttNInteger(), AttTypography()
 {
-    RegisterAttClass(ATT_COLOR);
-    RegisterAttClass(ATT_LANG);
-    RegisterAttClass(ATT_NINTEGER);
-    RegisterAttClass(ATT_TYPOGRAPHY);
+    this->RegisterAttClass(ATT_COLOR);
+    this->RegisterAttClass(ATT_LANG);
+    this->RegisterAttClass(ATT_NINTEGER);
+    this->RegisterAttClass(ATT_TYPOGRAPHY);
 
-    Reset();
+    this->Reset();
 }
 
 Verse::~Verse() {}
@@ -48,10 +48,10 @@ Verse::~Verse() {}
 void Verse::Reset()
 {
     LayerElement::Reset();
-    ResetColor();
-    ResetLang();
-    ResetNInteger();
-    ResetTypography();
+    this->ResetColor();
+    this->ResetLang();
+    this->ResetNInteger();
+    this->ResetTypography();
 
     m_drawingLabelAbbr = NULL;
 }
@@ -76,7 +76,7 @@ bool Verse::IsSupportedChild(Object *child)
     return true;
 }
 
-int Verse::AdjustPosition(int &overlap, int freeSpace, Doc *doc)
+int Verse::AdjustPosition(int &overlap, int freeSpace, const Doc *doc)
 {
     assert(doc);
 
@@ -232,9 +232,9 @@ int Verse::AdjustSylSpacing(FunctorParams *functorParams)
     return FUNCTOR_CONTINUE;
 }
 
-int Verse::PrepareProcessingLists(FunctorParams *functorParams)
+int Verse::InitProcessingLists(FunctorParams *functorParams)
 {
-    PrepareProcessingListsParams *params = vrv_params_cast<PrepareProcessingListsParams *>(functorParams);
+    InitProcessingListsParams *params = vrv_params_cast<InitProcessingListsParams *>(functorParams);
     assert(params);
     // StaffN_LayerN_VerseN_t *tree = vrv_cast<StaffN_LayerN_VerseN_t*>((*params).at(0));
 
@@ -249,10 +249,10 @@ int Verse::PrepareProcessingLists(FunctorParams *functorParams)
     return FUNCTOR_SIBLINGS;
 }
 
-int Verse::ResetDrawing(FunctorParams *functorParams)
+int Verse::ResetData(FunctorParams *functorParams)
 {
     // Call parent one too
-    LayerElement::ResetDrawing(functorParams);
+    LayerElement::ResetData(functorParams);
 
     m_drawingLabelAbbr = NULL;
 

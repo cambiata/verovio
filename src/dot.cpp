@@ -26,11 +26,11 @@ static const ClassRegistrar<Dot> s_factory("dot", DOT);
 
 Dot::Dot() : LayerElement(DOT, "dot-"), PositionInterface(), AttColor(), AttDotLog()
 {
-    RegisterInterface(PositionInterface::GetAttClasses(), PositionInterface::IsInterface());
-    RegisterAttClass(ATT_COLOR);
-    RegisterAttClass(ATT_DOTLOG);
+    this->RegisterInterface(PositionInterface::GetAttClasses(), PositionInterface::IsInterface());
+    this->RegisterAttClass(ATT_COLOR);
+    this->RegisterAttClass(ATT_DOTLOG);
 
-    Reset();
+    this->Reset();
 }
 
 Dot::~Dot() {}
@@ -39,8 +39,8 @@ void Dot::Reset()
 {
     LayerElement::Reset();
     PositionInterface::Reset();
-    ResetColor();
-    ResetDotLog();
+    this->ResetColor();
+    this->ResetDotLog();
 
     m_drawingPreviousElement = NULL;
     m_drawingNextElement = NULL;
@@ -61,11 +61,11 @@ int Dot::PreparePointersByLayer(FunctorParams *functorParams)
     return FUNCTOR_CONTINUE;
 }
 
-int Dot::ResetDrawing(FunctorParams *functorParams)
+int Dot::ResetData(FunctorParams *functorParams)
 {
     // Call parent one too
-    LayerElement::ResetDrawing(functorParams);
-    PositionInterface::InterfaceResetDrawing(functorParams, this);
+    LayerElement::ResetData(functorParams);
+    PositionInterface::InterfaceResetData(functorParams, this);
 
     m_drawingPreviousElement = NULL;
     m_drawingNextElement = NULL;

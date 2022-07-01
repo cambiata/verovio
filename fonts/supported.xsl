@@ -111,10 +111,12 @@
             <glyph glyph-code="E06A" smufl-name="unpitchedPercussionClef2" />
             <!--<glyph glyph-code="E06B" smufl-name="semipitchedPercussionClef1" />-->
             <!--<glyph glyph-code="E06C" smufl-name="semipitchedPercussionClef2" />-->
-            <!--<glyph glyph-code="E06F" smufl-name="cClefTriangular" />-->
-            <!--<glyph glyph-code="E070" smufl-name="fClefTriangular" />-->
-            <!--<glyph glyph-code="E071" smufl-name="cClefTriangularToFClef" />-->
-            <!--<glyph glyph-code="E072" smufl-name="fClefTriangularToCClef" />-->
+            <glyph glyph-code="E06D" smufl-name="6stringTabClef" />
+            <glyph glyph-code="E06E" smufl-name="4stringTabClef" />
+            <!--<glyph glyph-code="E06F" smufl-name="schaefferClef" />-->
+            <!--<glyph glyph-code="E070" smufl-name="schaefferPreviousClef" />-->
+            <!--<glyph glyph-code="E071" smufl-name="schaefferGClefToFClef" />-->
+            <!--<glyph glyph-code="E072" smufl-name="schaefferFClefToGClef" />-->
             <glyph glyph-code="E073" smufl-name="gClefReversed" />
             <glyph glyph-code="E074" smufl-name="gClefTurned" />
             <glyph glyph-code="E075" smufl-name="cClefReversed" />
@@ -122,9 +124,9 @@
             <glyph glyph-code="E077" smufl-name="fClefTurned" />
             <!--<glyph glyph-code="E078" smufl-name="bridgeClef" />-->
             <!--<glyph glyph-code="E079" smufl-name="accdnDiatonicClef" />-->
-            <!--<glyph glyph-code="E07A" smufl-name="gClefChange" />-->
-            <!--<glyph glyph-code="E07B" smufl-name="cClefChange" />-->
-            <!--<glyph glyph-code="E07C" smufl-name="fClefChange" />-->
+            <glyph glyph-code="E07A" smufl-name="gClefChange" />
+            <glyph glyph-code="E07B" smufl-name="cClefChange" />
+            <glyph glyph-code="E07C" smufl-name="fClefChange" />
             <!--<glyph glyph-code="E07D" smufl-name="clef8" />-->
             <!--<glyph glyph-code="E07E" smufl-name="clef15" />-->
             <!--<glyph glyph-code="E07F" smufl-name="clefChangeCombining" />-->
@@ -573,10 +575,10 @@
             <!--<glyph glyph-code="E22B" smufl-name="pendereckiTremolo" />-->
             <!--<glyph glyph-code="E22C" smufl-name="unmeasuredTremolo" />-->
             <!--<glyph glyph-code="E22D" smufl-name="unmeasuredTremoloSimple" />-->
-            <!--<glyph glyph-code="E22E" smufl-name="tremoloDivisiDots2" />-->
-            <!--<glyph glyph-code="E22F" smufl-name="tremoloDivisiDots3" />-->
-            <!--<glyph glyph-code="E230" smufl-name="tremoloDivisiDots4" />-->
-            <!--<glyph glyph-code="E231" smufl-name="tremoloDivisiDots6" />-->
+            <glyph glyph-code="E22E" smufl-name="tremoloDivisiDots2" />
+            <glyph glyph-code="E22F" smufl-name="tremoloDivisiDots3" />
+            <glyph glyph-code="E230" smufl-name="tremoloDivisiDots4" />
+            <glyph glyph-code="E231" smufl-name="tremoloDivisiDots6" />
             <!--<glyph glyph-code="E232" smufl-name="stockhausenTremolo" />-->
             <!--<glyph glyph-code="E233" smufl-name="oneHandedRollStevens" />-->
             <!--<glyph glyph-code="E234" smufl-name="doubleLateralRollStevens" />-->
@@ -2156,9 +2158,9 @@
             <!--<glyph glyph-code="E900" smufl-name="mensuralGclef" />-->
             <glyph glyph-code="E901" smufl-name="mensuralGclefPetrucci" />
             <glyph glyph-code="E902" smufl-name="chantFclef" />
-            <!--<glyph glyph-code="E903" smufl-name="mensuralFclef" />-->
+            <glyph glyph-code="E903" smufl-name="mensuralFclef" />
             <glyph glyph-code="E904" smufl-name="mensuralFclefPetrucci" />
-            <!--<glyph glyph-code="E905" smufl-name="mensuralCclef" />-->
+            <glyph glyph-code="E905" smufl-name="mensuralCclef" />
             <glyph glyph-code="E906" smufl-name="chantCclef" />
             <glyph glyph-code="E907" smufl-name="mensuralCclefPetrucciPosLowest" />
             <glyph glyph-code="E908" smufl-name="mensuralCclefPetrucciPosLow" />
@@ -2218,21 +2220,20 @@
             <glyph glyph-code="E938" smufl-name="mensuralNoteheadSemibrevisBlack" />
             <glyph glyph-code="E939" smufl-name="mensuralNoteheadSemibrevisVoid" />
             <!--<glyph glyph-code="E93A" smufl-name="mensuralNoteheadSemibrevisBlackVoid" />-->
-            <!--<glyph glyph-code="E93B"
-                smufl-name="mensuralNoteheadSemibrevisBlackVoidTurned" />-->
+            <!--<glyph glyph-code="E93B" smufl-name="mensuralNoteheadSemibrevisBlackVoidTurned" />-->
             <glyph glyph-code="E93C" smufl-name="mensuralNoteheadMinimaWhite" />
             <glyph glyph-code="E93D" smufl-name="mensuralNoteheadSemiminimaWhite" />
             <glyph glyph-code="E93E" smufl-name="mensuralCombStemUp" />
             <glyph glyph-code="E93F" smufl-name="mensuralCombStemDown" />
-            <!--<glyph glyph-code="E940" smufl-name="mensuralCombStemDiagonal" />-->
-            <!--<glyph glyph-code="E941" smufl-name="mensuralCombStemUpFlagRight" />-->
-            <!--<glyph glyph-code="E942" smufl-name="mensuralCombStemDownFlagRight" />-->
-            <!--<glyph glyph-code="E943" smufl-name="mensuralCombStemUpFlagLeft" />-->
-            <!--<glyph glyph-code="E944" smufl-name="mensuralCombStemDownFlagLeft" />-->
-            <!--<glyph glyph-code="E945" smufl-name="mensuralCombStemUpFlagFlared" />-->
-            <!--<glyph glyph-code="E946" smufl-name="mensuralCombStemDownFlagFlared" />-->
-            <!--<glyph glyph-code="E947" smufl-name="mensuralCombStemUpFlagExtended" />-->
-            <!--<glyph glyph-code="E948" smufl-name="mensuralCombStemDownFlagExtended" />-->
+            <glyph glyph-code="E940" smufl-name="mensuralCombStemDiagonal" />
+            <glyph glyph-code="E941" smufl-name="mensuralCombStemUpFlagRight" />
+            <glyph glyph-code="E942" smufl-name="mensuralCombStemDownFlagRight" />
+            <glyph glyph-code="E943" smufl-name="mensuralCombStemUpFlagLeft" />
+            <glyph glyph-code="E944" smufl-name="mensuralCombStemDownFlagLeft" />
+            <glyph glyph-code="E945" smufl-name="mensuralCombStemUpFlagFlared" />
+            <glyph glyph-code="E946" smufl-name="mensuralCombStemDownFlagFlared" />
+            <glyph glyph-code="E947" smufl-name="mensuralCombStemUpFlagExtended" />
+            <glyph glyph-code="E948" smufl-name="mensuralCombStemDownFlagExtended" />
             <glyph glyph-code="E949" smufl-name="mensuralCombStemUpFlagSemiminima" />
             <glyph glyph-code="E94A" smufl-name="mensuralCombStemDownFlagSemiminima" />
             <glyph glyph-code="E94B" smufl-name="mensuralCombStemUpFlagFusa" />
@@ -2959,13 +2960,13 @@
         </miscellaneousSymbols>
         <timeSignaturesSupplement>
             <description>Time signatures supplement</description>
-            <!--<glyph glyph-code="EC80" smufl-name="timeSigBracketLeft" />-->
-            <!--<glyph glyph-code="EC81" smufl-name="timeSigBracketRight" />-->
-            <!--<glyph glyph-code="EC82" smufl-name="timeSigBracketLeftSmall" />-->
-            <!--<glyph glyph-code="EC83" smufl-name="timeSigBracketRightSmall" />-->
-            <!--<glyph glyph-code="EC84" smufl-name="timeSigSlash" />-->
-            <!--<glyph glyph-code="EC85" smufl-name="timeSigCut2" />-->
-            <!--<glyph glyph-code="EC86" smufl-name="timeSigCut3" />-->
+            <glyph glyph-code="EC80" smufl-name="timeSigBracketLeft" />
+            <glyph glyph-code="EC81" smufl-name="timeSigBracketRight" />
+            <glyph glyph-code="EC82" smufl-name="timeSigBracketLeftSmall" />
+            <glyph glyph-code="EC83" smufl-name="timeSigBracketRightSmall" />
+            <glyph glyph-code="EC84" smufl-name="timeSigSlash" />
+            <glyph glyph-code="EC85" smufl-name="timeSigCut2" />
+            <glyph glyph-code="EC86" smufl-name="timeSigCut3" />
             <range_end>U+EC8F</range_end>
             <range_start>U+EC80</range_start>
         </timeSignaturesSupplement>

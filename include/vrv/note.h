@@ -79,11 +79,16 @@ public:
      * @name Getter to interfaces
      */
     ///@{
-    DurationInterface *GetDurationInterface() override { return dynamic_cast<DurationInterface *>(this); }
-    PitchInterface *GetPitchInterface() override { return dynamic_cast<PitchInterface *>(this); }
-    StemmedDrawingInterface *GetStemmedDrawingInterface() override
+    DurationInterface *GetDurationInterface() override { return vrv_cast<DurationInterface *>(this); }
+    const DurationInterface *GetDurationInterface() const override { return vrv_cast<const DurationInterface *>(this); }
+    PitchInterface *GetPitchInterface() override { return vrv_cast<PitchInterface *>(this); }
+    const PitchInterface *GetPitchInterface() const override { return vrv_cast<const PitchInterface *>(this); }
+    PositionInterface *GetPositionInterface() override { return vrv_cast<PositionInterface *>(this); }
+    const PositionInterface *GetPositionInterface() const override { return vrv_cast<const PositionInterface *>(this); }
+    StemmedDrawingInterface *GetStemmedDrawingInterface() override { return vrv_cast<StemmedDrawingInterface *>(this); }
+    const StemmedDrawingInterface *GetStemmedDrawingInterface() const override
     {
-        return dynamic_cast<StemmedDrawingInterface *>(this);
+        return vrv_cast<const StemmedDrawingInterface *>(this);
     }
     ///@}
 
@@ -107,18 +112,19 @@ public:
     /**
      * Align dots shift for two notes. Should be used for unison notes to align dots positioning
      */
-    void AlignDotsShift(Note *otherNote);
+    void AlignDotsShift(const Note *otherNote);
 
     /**
      * @name Setter and getter for accid attribute and other pointers
      */
     ///@{
     Accid *GetDrawingAccid();
+    const Accid *GetDrawingAccid() const;
     ///@}
 
     /**
      * @name Setter and getter for the drawing staff loc.
-     * This is set by the SetAlignmentPitchPos functor.
+     * This is set by the CalcAlignmentPitchPos functor.
      */
     ///@{
     void SetDrawingLoc(int drawingLoc) { m_drawingLoc = drawingLoc; }
@@ -131,13 +137,14 @@ public:
      * Otherwise, it will look for the Staff ancestor.
      * Set the value of ledger lines above or below.
      */
-    bool HasLedgerLines(int &linesAbove, int &linesBelow, Staff *staff = NULL);
+    bool HasLedgerLines(int &linesAbove, int &linesBelow, const Staff *staff = NULL) const;
 
     /**
      * Overriding functions to return information from chord parent if any
      */
     ///@{
-    Chord *IsChordTone() const;
+    Chord *IsChordTone();
+    const Chord *IsChordTone() const;
     int GetDrawingDur() const;
     bool IsClusterExtreme() const; // used to find if it is the highest or lowest note in a cluster
     ///@}
@@ -145,7 +152,10 @@ public:
     /**
      * Return the parent TabGrp is the note is part of one.
      */
-    TabGrp *IsTabGrpNote() const;
+    ///@{
+    TabGrp *IsTabGrpNote();
+    const TabGrp *IsTabGrpNote() const;
+    ///@}
 
     /**
      * @name Return the smufl string to use for a note give the notation type
@@ -158,14 +168,14 @@ public:
      * Return true if the note is a unison.
      * If ignoreAccid is set to true then only @pname and @oct are compared.
      */
-    bool IsUnisonWith(Note *note, bool ignoreAccid = false);
+    bool IsUnisonWith(const Note *note, bool ignoreAccid = false) const;
 
     /**
      * @name Setter and getter for the chord cluster and the position of the note
      */
     ///@{
     void SetCluster(ChordCluster *cluster, int position);
-    ChordCluster *GetCluster() const { return m_cluster; }
+    ChordCluster *GetCluster() { return m_cluster; }
     ///@}
 
     /**
@@ -186,9 +196,9 @@ public:
      * If necessary look at the glyph anchor (if any).
      */
     ///@{
-    Point GetStemUpSE(Doc *doc, int staffSize, bool isCueSize) override;
-    Point GetStemDownNW(Doc *doc, int staffSize, bool isCueSize) override;
-    int CalcStemLenInThirdUnits(Staff *staff, data_STEMDIRECTION stemDir) override;
+    Point GetStemUpSE(const Doc *doc, int staffSize, bool isCueSize) const override;
+    Point GetStemDownNW(const Doc *doc, int staffSize, bool isCueSize) const override;
+    int CalcStemLenInThirdUnits(const Staff *staff, data_STEMDIRECTION stemDir) const override;
     ///@}
 
     /**
@@ -204,7 +214,7 @@ public:
     /**
      * Check whether current note is enharmonic with another
      */
-    bool IsEnharmonicWith(Note *note);
+    bool IsEnharmonicWith(const Note *note) const;
 
     /**
      * Check if a note or its parent chord are visible
@@ -212,39 +222,28 @@ public:
     bool IsVisible() const;
 
     /**
-     * MIDI timing information
-     */
-    ///@{
-    void SetScoreTimeOnset(double scoreTime);
-    void SetRealTimeOnsetSeconds(double timeInSeconds);
-    void SetScoreTimeOffset(double scoreTime);
-    void SetRealTimeOffsetSeconds(double timeInSeconds);
-    void SetScoreTimeTiedDuration(double timeInSeconds);
-    double GetScoreTimeOnset() const;
-    double GetRealTimeOnsetMilliseconds() const;
-    double GetScoreTimeOffset() const;
-    double GetScoreTimeTiedDuration() const;
-    double GetRealTimeOffsetMilliseconds() const;
-    double GetScoreTimeDuration() const;
-    ///@}
-
-    /**
      * MIDI pitch
      */
-    int GetMIDIPitch(int shift = 0);
+    int GetMIDIPitch(int shift = 0) const;
 
     /**
      * @name Checker, getter and setter for a note with which the stem is shared
      */
     ///@{
     bool HasStemSameasNote() const { return (m_stemSameas); }
-    Note *GetStemSameasNote() const { return m_stemSameas; }
+    Note *GetStemSameasNote() { return m_stemSameas; }
+    const Note *GetStemSameasNote() const { return m_stemSameas; }
     void SetStemSameasNote(Note *stemSameas) { m_stemSameas = stemSameas; }
     ///@}
 
     /**
+     * Getter for stem sameas role
+     */
+    StemSameasDrawingRole GetStemSameasRole() const { return m_stemSameasRole; }
+
+    /**
      * Resovle @stem.sameas links by instanciating Note::m_stemSameas (*Note).
-     * Called twice from Object::PrepareLinks. Once to fill uuid / note pairs,
+     * Called twice from Object::PrepareLinks. Once to fill id / note pairs,
      * and once to resolve the link. The link is bi-directional, which means
      * that both notes have their m_stemSameas pointer instanciated.
      */
@@ -258,6 +257,13 @@ public:
      */
     data_STEMDIRECTION CalcStemDirForSameasNote(int verticalCenter);
 
+    /**
+     * Set the Note::m_flippedNotehead flag if one of the two notes needs to be placed on the side.
+     * The note X relative position remains untouched because we do not want the stem position to be changed.
+     * This is different than with chords. It means the the X position is actually corrected when drawing the note.
+     */
+    void CalcNoteHeadShiftForSameasNote(Note *stemSameas, data_STEMDIRECTION stemDir);
+
 public:
     //----------------//
     // Static methods //
@@ -267,7 +273,7 @@ public:
      * Assume that two notes from different layers are given occuring at the same time
      * Returns true if one note has a ledger line that collides (or is quite close) to the other note's stem
      */
-    static bool HandleLedgerLineStemCollision(Doc *doc, Staff *staff, Note *note1, Note *note2);
+    static bool HandleLedgerLineStemCollision(const Doc *doc, const Staff *staff, const Note *note1, const Note *note2);
 
     //----------//
     // Functors //
@@ -319,9 +325,9 @@ public:
     int PrepareLyrics(FunctorParams *functorParams) override;
 
     /**
-     * See Object::ResetDrawing
+     * See Object::ResetData
      */
-    int ResetDrawing(FunctorParams *functorParams) override;
+    int ResetData(FunctorParams *functorParams) override;
 
     /**
      * See Object::ResetHorizontalAlignment
@@ -347,30 +353,30 @@ protected:
     /**
      * The note locations w.r.t. each staff
      */
-    MapOfNoteLocs CalcNoteLocations(NotePredicate predicate = NULL) override;
+    MapOfNoteLocs CalcNoteLocations(NotePredicate predicate = NULL) const override;
 
     /**
      * The dot locations w.r.t. each staff
      * Since dots for notes on staff lines can be shifted upwards or downwards, there are two choices: primary and
      * secondary
      */
-    MapOfDotLocs CalcDotLocations(int layerCount, bool primary) override;
+    MapOfDotLocs CalcDotLocations(int layerCount, bool primary) const override;
 
 private:
     /**
      * Get the pitch difference in semitones of the accidental (implicit or explicit) for this note.
      */
-    int GetChromaticAlteration();
+    int GetChromaticAlteration() const;
 
-    TransPitch GetTransPitch();
+    TransPitch GetTransPitch() const;
 
-    void UpdateFromTransPitch(const TransPitch &tp);
+    void UpdateFromTransPitch(const TransPitch &tp, bool hasKeySig);
 
     /**
      * Return whether dots are overlapping with flag. Take into account flag height, its position as well
      * as position of the note and position of the dots
      */
-    bool IsDotOverlappingWithFlag(Doc *doc, const int staffSize, bool isDotShifted);
+    bool IsDotOverlappingWithFlag(const Doc *doc, const int staffSize, int dotLocShift) const;
 
     /**
      * Register deferred notes for MIDI
@@ -397,49 +403,13 @@ private:
 
     /**
      * flags for determining clusters in chord (cluster this belongs to)
-     **/
+     */
     ChordCluster *m_cluster;
 
     /**
      * Position in the cluster (1-indexed position in said cluster; 0 if does not have position)
      */
     int m_clusterPosition;
-
-    /**
-     * The score-time onset of the note in the measure (duration from the start of measure in
-     * quarter notes).
-     */
-    double m_scoreTimeOnset;
-
-    /**
-     * The score-time off-time of the note in the measure (duration from the start of the measure
-     * in quarter notes).  This is the duration of the printed note.  If the note is the start of
-     * a tied group, the score time of the tied group is this variable plus m_scoreTimeTiedDuration.
-     * If this note is a secondary note in a tied group, then this value is the score time end
-     * of the printed note, and the m_scoreTimeTiedDuration is -1.0 to indicate that it should not
-     * be exported when creating a MIDI file.
-     */
-    double m_scoreTimeOffset;
-
-    /**
-     * The time in milliseconds since the start of the measure element that contains the note.
-     */
-    double m_realTimeOnsetMilliseconds;
-
-    /**
-     * The time in milliseconds since the start of the measure element to end of printed note.
-     * The real-time duration of a tied group is not currently tracked (this gets complicated
-     * if there is a tempo change during a note sustain, which is currently not supported).
-     */
-    double m_realTimeOffsetMilliseconds;
-
-    /**
-     * If the note is the first in a tied group, then m_scoreTimeTiedDuration contains the
-     * score-time duration (in quarter notes) of all tied notes in the group after this note.
-     * If the note is a secondary note in a tied group, then this variable is set to -1.0 to
-     * indicate that it should not be written to MIDI output.
-     */
-    double m_scoreTimeTiedDuration;
 
     /**
      * A pointer to a note with which the note shares its stem and implementing @stem.sameas.
@@ -463,9 +433,7 @@ private:
 //----------------------------------------------------------------------------
 
 /**
- * Unary predicate for comparing object types.
- * This is used for example in std::find_if.
- * See Object::GetFirst or Object::GetNext
+ * Unary predicate for sorting notes by diatonic pitch
  */
 class DiatonicSort {
 
@@ -478,6 +446,27 @@ public:
         const Note *n2 = dynamic_cast<const Note *>(second);
         assert(n1 && n2);
         return (n1->GetDiatonicPitch() < n2->GetDiatonicPitch());
+    }
+};
+
+//----------------------------------------------------------------------------
+// TabCourseSort
+//----------------------------------------------------------------------------
+
+/**
+ * Unary predicate for sorting notes by course number
+ */
+class TabCourseSort {
+
+public:
+    TabCourseSort() {}
+
+    bool operator()(const Object *first, const Object *second) const
+    {
+        const Note *n1 = dynamic_cast<const Note *>(first);
+        const Note *n2 = dynamic_cast<const Note *>(second);
+        assert(n1 && n2);
+        return (n1->GetTabCourse() > n2->GetTabCourse());
     }
 };
 

@@ -17,6 +17,7 @@
 
 #include "attdef.h"
 #include "io.h"
+#include "metersig.h"
 #include "vrvdef.h"
 
 //----------------------------------------------------------------------------
@@ -26,6 +27,7 @@
 namespace vrv {
 
 class Arpeg;
+class BeamSpan;
 class BracketSpan;
 class Clef;
 class ControlElement;
@@ -64,26 +66,30 @@ namespace musicxml {
 
     class OpenSlur {
     public:
-        OpenSlur(const std::string &measureNum, short int number)
+        OpenSlur(const std::string &measureNum, short int number, curvature_CURVEDIR curvedir)
         {
             m_measureNum = measureNum;
             m_number = number;
+            m_curvedir = curvedir;
         }
 
         std::string m_measureNum;
         short int m_number;
+        curvature_CURVEDIR m_curvedir;
     };
 
     class CloseSlur {
     public:
-        CloseSlur(const std::string &measureNum, short int number)
+        CloseSlur(const std::string &measureNum, short int number, curvature_CURVEDIR curvedir)
         {
             m_measureNum = measureNum;
             m_number = number;
+            m_curvedir = curvedir;
         }
 
         std::string m_measureNum;
         short int m_number;
+        curvature_CURVEDIR m_curvedir;
     };
 
     class OpenSpanner {
@@ -218,7 +224,7 @@ private:
     void ReadMusicXmlNote(
         pugi::xml_node, Measure *measure, const std::string &measureNum, const short int staffOffset, Section *section);
     void ReadMusicXmlPrint(pugi::xml_node, Section *section);
-    void ReadMusicXmlBeamsAndTuplets(const pugi::xml_node &node, Layer *layer, bool isChord);
+    bool ReadMusicXmlBeamsAndTuplets(const pugi::xml_node &node, Layer *layer, bool isChord);
     void ReadMusicXmlTupletStart(const pugi::xml_node &node, const pugi::xml_node &tupletStart, Layer *layer);
     void ReadMusicXmlBeamStart(const pugi::xml_node &node, const pugi::xml_node &beamStart, Layer *layer);
     void ReadMusicXMLMeterSig(const pugi::xml_node &node, Object *parent);
@@ -292,6 +298,11 @@ private:
      */
     void RemoveLastFromStack(ClassId classId, Layer *layer);
 
+    /**
+     * Check if element of classId type is present on the specified layer
+     */
+    bool IsInStack(ClassId classId, Layer *layer);
+
     /*
      * @name Helper methods for checking presence of values of attributes or elements
      */
@@ -325,8 +336,9 @@ private:
     ///@{
     void OpenTie(Note *note, Tie *tie);
     void CloseTie(Note *note);
-    void OpenSlur(Measure *measure, short int number, Slur *slur);
-    void CloseSlur(Measure *measure, short int number, LayerElement *element);
+    void OpenSlur(Measure *measure, short int number, Slur *slur, curvature_CURVEDIR dir);
+    void CloseSlur(Measure *measure, short int number, LayerElement *element, curvature_CURVEDIR dir);
+    void CloseBeamSpan(Staff *staff, Layer *layer, LayerElement *element);
     ///@}
 
     /*
@@ -351,7 +363,7 @@ private:
      */
     ///@{
     ///@}
-    void GenerateUuid(pugi::xml_node node);
+    void GenerateID(pugi::xml_node node);
 
     /*
      * @name Helper method for meterSigGrp. Separates beat/beat-type into MeterSig and adds them to the MeterSigGrp.
@@ -406,6 +418,11 @@ private:
     ///@}
 
     /*
+     * @name Helper for detecting the slur curve direction
+     */
+    static curvature_CURVEDIR CombineCurvedir(curvature_CURVEDIR startDir, curvature_CURVEDIR stopDir);
+
+    /*
      * @name Methods for converting MusicXML values to MEI attributes.
      */
     ///@{
@@ -420,6 +437,7 @@ private:
     static data_MIDIVALUE ConvertDynamicsToMidiVal(const float dynamics);
     static data_PITCHNAME ConvertStepToPitchName(const std::string &value);
     static data_TEXTRENDITION ConvertEnclosure(const std::string &value);
+    static beamRend_FORM ConvertBeamFanToForm(const std::string &value);
     static curvature_CURVEDIR InferCurvedir(const pugi::xml_node slurOrTie);
     static fermataVis_SHAPE ConvertFermataShape(const std::string &value);
     static pedalLog_DIR ConvertPedalTypeToDir(const std::string &value);
@@ -455,6 +473,7 @@ private:
     /* meter signature */
     std::vector<int> m_meterCount = { 4 };
     int m_meterUnit = 4;
+    MeterCountSign m_meterSign = MeterCountSign::None;
     /* part information */
     Label *m_label = NULL;
     LabelAbbr *m_labelAbbr = NULL;
@@ -484,6 +503,8 @@ private:
     /* The stack for hairpin stops that might occur before a hairpin was started staffNumber, tStamp2, (hairpinNumber,
      * measureCount) */
     std::vector<std::tuple<int, double, musicxml::OpenSpanner>> m_hairpinStopStack;
+    /* The stack for the beamspans with numbers of staff/layer where starting element is located*/
+    std::vector<std::pair<BeamSpan *, std::pair<int, int>>> m_beamspanStack;
     std::vector<std::pair<BracketSpan *, musicxml::OpenSpanner>> m_bracketStack;
     std::vector<std::pair<Trill *, musicxml::OpenSpanner>> m_trillStack;
     /* The stack of endings to be inserted at the end of XML import */

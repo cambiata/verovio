@@ -30,8 +30,7 @@ enum DurExtreme { LONGEST = 0, SHORTEST };
 class Comparison {
 
 public:
-    virtual bool operator()(Object *object) = 0;
-    virtual bool MatchesType(Object *object) = 0;
+    virtual bool operator()(const Object *object) = 0;
     // For classes that do a reverse comparison, return reversed result
     bool Result(bool comparison) { return (m_reverse) ? !comparison : comparison; }
     // Set reverse comparison.
@@ -60,23 +59,11 @@ class ClassIdComparison : public Comparison {
 public:
     ClassIdComparison(ClassId classId) { m_classId = classId; }
 
-    bool operator()(Object *object) override
-    {
-        if (object->Is(m_classId)) {
-            return true;
-        }
-        return false;
-    }
+    bool operator()(const Object *object) override { return this->MatchesType(object); }
 
     ClassId GetType() { return m_classId; }
 
-    bool MatchesType(Object *object) override
-    {
-        if (object->Is(m_classId)) {
-            return true;
-        }
-        return false;
-    }
+    bool MatchesType(const Object *object) { return (object->Is(m_classId)); }
 
 protected:
     ClassId m_classId;
@@ -95,15 +82,9 @@ public:
         m_supportReverse = true;
     }
 
-    bool operator()(Object *object) override
-    {
-        if (object->Is(m_classIds)) {
-            return Result(true);
-        }
-        return Result(false);
-    }
+    bool operator()(const Object *object) override { return Result(this->MatchesType(object)); }
 
-    bool MatchesType(Object *object) override { return true; }
+    bool MatchesType(const Object *object) { return (object->Is(m_classIds)); }
 
 protected:
     std::vector<ClassId> m_classIds;
@@ -118,15 +99,13 @@ class InterfaceComparison : public Comparison {
 public:
     InterfaceComparison(InterfaceId interfaceId) { m_interfaceId = interfaceId; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (object->HasInterface(m_interfaceId)) {
             return true;
         }
         return false;
     }
-
-    bool MatchesType(Object *object) override { return true; }
 
 protected:
     InterfaceId m_interfaceId;
@@ -139,21 +118,21 @@ protected:
 class PointingToComparison : public ClassIdComparison {
 
 public:
-    PointingToComparison(ClassId classId, Object *pointingTo) : ClassIdComparison(classId)
+    PointingToComparison(ClassId classId, const Object *pointingTo) : ClassIdComparison(classId)
     {
         m_pointingTo = pointingTo;
     }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
-        TimePointInterface *interface = object->GetTimePointInterface();
+        const TimePointInterface *interface = object->GetTimePointInterface();
         if (!interface) return false;
         return (interface->GetStart() == m_pointingTo);
     }
 
 protected:
-    Object *m_pointingTo;
+    const Object *m_pointingTo;
 };
 
 //----------------------------------------------------------------------------
@@ -163,21 +142,21 @@ protected:
 class SpanningToComparison : public ClassIdComparison {
 
 public:
-    SpanningToComparison(ClassId classId, Object *pointingTo) : ClassIdComparison(classId)
+    SpanningToComparison(ClassId classId, const Object *pointingTo) : ClassIdComparison(classId)
     {
         m_pointingTo = pointingTo;
     }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
-        TimeSpanningInterface *interface = object->GetTimeSpanningInterface();
+        const TimeSpanningInterface *interface = object->GetTimeSpanningInterface();
         if (!interface) return false;
         return (interface->GetEnd() == m_pointingTo);
     }
 
 protected:
-    Object *m_pointingTo;
+    const Object *m_pointingTo;
 };
 
 //----------------------------------------------------------------------------
@@ -192,13 +171,11 @@ class IsEditorialElementComparison : public Comparison {
 public:
     IsEditorialElementComparison() : Comparison() { m_supportReverse = true; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (object->IsEditorialElement()) return Result(true);
         return Result(false);
     }
-
-    bool MatchesType(Object *object) override { return true; }
 };
 
 //----------------------------------------------------------------------------
@@ -213,7 +190,7 @@ class IsEmptyComparison : public ClassIdComparison {
 public:
     IsEmptyComparison(ClassId classId) : ClassIdComparison(classId) { m_supportReverse = true; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
         if (object->GetChildCount() == 0) {
@@ -237,7 +214,7 @@ class IsAttributeComparison : public ClassIdComparison {
 public:
     IsAttributeComparison(ClassId classId) : ClassIdComparison(classId) {}
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
         if (object->IsAttribute()) return true;
@@ -259,12 +236,12 @@ public:
 
     void SetN(int n) { m_n = n; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
         // This should not happen, but just in case
         if (!object->HasAttClass(ATT_NINTEGER)) return false;
-        AttNInteger *element = dynamic_cast<AttNInteger *>(object);
+        const AttNInteger *element = dynamic_cast<const AttNInteger *>(object);
         assert(element);
         return (element->GetN() == m_n);
     }
@@ -288,12 +265,12 @@ public:
     void SetNs(std::vector<int> ns) { m_ns = ns; }
     void AppendN(int n) { m_ns.push_back(n); }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
         // This should not happen, but just in case
         if (!object->HasAttClass(ATT_NINTEGER)) return false;
-        AttNInteger *element = dynamic_cast<AttNInteger *>(object);
+        const AttNInteger *element = dynamic_cast<const AttNInteger *>(object);
         assert(element);
         return (std::find(m_ns.begin(), m_ns.end(), element->GetN()) != m_ns.end());
     }
@@ -316,12 +293,12 @@ public:
 
     void SetN(std::string n) { m_n = n; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
         // This should not happen, but just in case
         if (!object->HasAttClass(ATT_NNUMBERLIKE)) return false;
-        AttNNumberLike *element = dynamic_cast<AttNNumberLike *>(object);
+        const AttNNumberLike *element = dynamic_cast<const AttNNumberLike *>(object);
         assert(element);
         return (element->GetN() == m_n);
     }
@@ -351,10 +328,10 @@ public:
             m_extremeDur = VRV_UNSET;
     }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!object->HasInterface(INTERFACE_DURATION)) return false;
-        DurationInterface *interface = dynamic_cast<DurationInterface *>(object);
+        const DurationInterface *interface = dynamic_cast<const DurationInterface *>(object);
         assert(interface);
         if (interface->HasDur()) {
             if ((m_extremeType == LONGEST) && (interface->GetActualDur() < m_extremeDur)) {
@@ -388,17 +365,37 @@ public:
         m_isVisible = isVisible;
     };
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
         if (!object->HasAttClass(ATT_VISIBILITY)) return false;
-        AttVisibility *visibility = dynamic_cast<AttVisibility *>(object);
+        const AttVisibility *visibility = dynamic_cast<const AttVisibility *>(object);
         assert(visibility);
         return (visibility->GetVisible() == m_isVisible);
     }
 
 private:
     data_BOOLEAN m_isVisible;
+};
+
+//----------------------------------------------------------------------------
+// CrossAlignmentReferenceComparison
+//----------------------------------------------------------------------------
+
+/**
+ * This class evaluates if alignment reference contains cross-staff elements
+ */
+class CrossAlignmentReferenceComparison : public ClassIdComparison {
+public:
+    CrossAlignmentReferenceComparison() : ClassIdComparison(ALIGNMENT_REFERENCE) {}
+
+    bool operator()(const Object *object) override
+    {
+        if (!this->MatchesType(object)) return false;
+        const AlignmentReference *ref = vrv_cast<const AlignmentReference *>(object);
+        assert(ref);
+        return ref->HasCrossStaffElements();
+    }
 };
 
 //----------------------------------------------------------------------------
@@ -415,10 +412,10 @@ public:
 
     void SetType(AlignmentType type) { m_type = type; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
-        Alignment *alignment = vrv_cast<Alignment *>(object);
+        const Alignment *alignment = vrv_cast<const Alignment *>(object);
         assert(alignment);
         return (alignment->GetType() == m_type);
     }
@@ -441,10 +438,10 @@ public:
 
     void SetTime(int time) { m_time = time; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
-        Measure *measure = vrv_cast<Measure *>(object);
+        const Measure *measure = vrv_cast<const Measure *>(object);
         assert(measure);
         return (measure->EnclosesTime(m_time) > 0);
     }
@@ -454,25 +451,26 @@ private:
 };
 
 //----------------------------------------------------------------------------
-// NoteOnsetOffsetComparison
+// NoteOrRestOnsetOffsetComparison
 //----------------------------------------------------------------------------
 
 /**
  * This class evaluates if the object is a note being played at the given time.
  */
-class NoteOnsetOffsetComparison : public ClassIdComparison {
+class NoteOrRestOnsetOffsetComparison : public ClassIdsComparison {
 
 public:
-    NoteOnsetOffsetComparison(const int time) : ClassIdComparison(NOTE) { m_time = time; }
+    NoteOrRestOnsetOffsetComparison(const int time) : ClassIdsComparison({ NOTE, REST }) { m_time = time; }
 
     void SetTime(int time) { m_time = time; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
-        Note *note = vrv_cast<Note *>(object);
-        assert(note);
-        return ((m_time >= note->GetRealTimeOnsetMilliseconds()) && (m_time <= note->GetRealTimeOffsetMilliseconds()));
+        const DurationInterface *interface = object->GetDurationInterface();
+        assert(interface);
+        return ((m_time >= interface->GetRealTimeOnsetMilliseconds())
+            && (m_time <= interface->GetRealTimeOffsetMilliseconds()));
     }
 
 private:
@@ -480,27 +478,27 @@ private:
 };
 
 //----------------------------------------------------------------------------
-// UuidComparison
+// IDComparison
 //----------------------------------------------------------------------------
 
 /**
- * This class evaluates if the object is of a certain ClassId has a certain Uuid
+ * This class evaluates if the object is of a certain ClassId has a certain ID
  */
-class UuidComparison : public ClassIdComparison {
+class IDComparison : public ClassIdComparison {
 
 public:
-    UuidComparison(ClassId classId, const std::string &uuid) : ClassIdComparison(classId) { m_uuid = uuid; }
+    IDComparison(ClassId classId, const std::string &id) : ClassIdComparison(classId) { m_id = id; }
 
-    void SetUuid(const std::string &uuid) { m_uuid = uuid; }
+    void SetID(const std::string &id) { m_id = id; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (!MatchesType(object)) return false;
-        return object->GetUuid() == m_uuid;
+        return (object->GetID() == m_id);
     }
 
 private:
-    std::string m_uuid;
+    std::string m_id;
 };
 
 //----------------------------------------------------------------------------
@@ -517,21 +515,79 @@ public:
 
     void Skip(const Object *objectToExclude) { m_objectToExclude = objectToExclude; }
 
-    bool operator()(Object *object) override
+    bool operator()(const Object *object) override
     {
         if (object == m_objectToExclude || !ClassIdsComparison::operator()(object)) return false;
 
         if (object->Is(STAFFDEF)) {
-            StaffDef *staffDef = dynamic_cast<StaffDef *>(object);
+            const StaffDef *staffDef = vrv_cast<const StaffDef *>(object);
             return staffDef && staffDef->GetDrawingVisibility() != OPTIMIZATION_HIDDEN;
         }
 
-        StaffGrp *staffGrp = dynamic_cast<StaffGrp *>(object);
+        const StaffGrp *staffGrp = vrv_cast<const StaffGrp *>(object);
         return staffGrp && staffGrp->GetDrawingVisibility() != OPTIMIZATION_HIDDEN;
     }
 
 protected:
     const Object *m_objectToExclude;
+};
+
+//----------------------------------------------------------------------------
+// Filters class
+//----------------------------------------------------------------------------
+
+/**
+ * This class is used to store comparison filters and apply them when necessary
+ */
+class Filters {
+public:
+    enum class Type { AllOf, AnyOf };
+
+public:
+    Filters() = default;
+    explicit Filters(const std::initializer_list<Comparison *> &comp)
+    {
+        std::copy(comp.begin(), comp.end(), std::back_inserter(m_filters));
+    }
+
+    void Add(Comparison *comp) { m_filters.push_back(comp); }
+    void Clear() { m_filters.clear(); }
+    void SetType(Type type) { m_type = type; }
+
+    /**
+     * Apply comparison filter based on the specified type
+     */
+    bool Apply(const Object *object) const
+    {
+        auto condition = [object](Comparison *iter) {
+            // ignore any class comparison which does not match the object class
+            ClassIdComparison *cmp = dynamic_cast<ClassIdComparison *>(iter);
+            if (!cmp || (cmp->GetType() != object->GetClassId())) {
+                return true;
+            }
+            return (*iter)(object);
+        };
+        switch (m_type) {
+            case Type::AnyOf: {
+                return std::any_of(m_filters.cbegin(), m_filters.cend(), condition);
+            }
+            case Type::AllOf:
+            default: {
+                return std::all_of(m_filters.cbegin(), m_filters.cend(), condition);
+            }
+        }
+    }
+
+    Filters &operator=(const std::initializer_list<Comparison *> &other)
+    {
+        m_filters.clear();
+        std::copy(other.begin(), other.end(), std::back_inserter(m_filters));
+        return *this;
+    }
+
+private:
+    std::vector<Comparison *> m_filters;
+    Type m_type = Type::AllOf;
 };
 
 } // namespace vrv

@@ -27,10 +27,10 @@ static const ClassRegistrar<F> s_factory("f", FIGURE);
 
 F::F() : TextElement(FIGURE, "f-"), TimeSpanningInterface(), AttExtender()
 {
-    RegisterInterface(TimeSpanningInterface::GetAttClasses(), TimeSpanningInterface::IsInterface());
-    RegisterAttClass(ATT_EXTENDER);
+    this->RegisterInterface(TimeSpanningInterface::GetAttClasses(), TimeSpanningInterface::IsInterface());
+    this->RegisterAttClass(ATT_EXTENDER);
 
-    Reset();
+    this->Reset();
 }
 
 F::~F() {}
@@ -39,7 +39,7 @@ void F::Reset()
 {
     TextElement::Reset();
     TimeSpanningInterface::Reset();
-    ResetExtender();
+    this->ResetExtender();
 }
 
 bool F::IsSupportedChild(Object *child)
@@ -90,20 +90,20 @@ int F::PrepareTimestamps(FunctorParams *functorParams)
     return interface->InterfacePrepareTimestamps(functorParams, this);
 }
 
-int F::FillStaffCurrentTimeSpanning(FunctorParams *functorParams)
+int F::PrepareStaffCurrentTimeSpanning(FunctorParams *functorParams)
 {
     TimeSpanningInterface *interface = this->GetTimeSpanningInterface();
     assert(interface);
-    return interface->InterfaceFillStaffCurrentTimeSpanning(functorParams, this);
+    return interface->InterfacePrepareStaffCurrentTimeSpanning(functorParams, this);
 }
 
-int F::ResetDrawing(FunctorParams *functorParams)
+int F::ResetData(FunctorParams *functorParams)
 {
-    TextElement::ResetDrawing(functorParams);
+    TextElement::ResetData(functorParams);
 
     TimeSpanningInterface *interface = this->GetTimeSpanningInterface();
     assert(interface);
-    return interface->InterfaceResetDrawing(functorParams, this);
+    return interface->InterfaceResetData(functorParams, this);
 }
 
 } // namespace vrv

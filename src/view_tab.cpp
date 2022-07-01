@@ -17,6 +17,7 @@
 
 #include "devicecontext.h"
 #include "doc.h"
+#include "elementpart.h"
 #include "note.h"
 #include "options.h"
 #include "rend.h"
@@ -30,6 +31,42 @@
 
 namespace vrv {
 
+void View::DrawTabClef(DeviceContext *dc, LayerElement *element, Layer *layer, Staff *staff, Measure *measure)
+{
+    assert(dc);
+    assert(element);
+    assert(layer);
+    assert(staff);
+    assert(measure);
+
+    Clef *clef = vrv_cast<Clef *>(element);
+    assert(clef);
+
+    const int glyphSize = staff->GetDrawingStaffNotationSize();
+
+    int x, y;
+    y = staff->GetDrawingY();
+    x = element->GetDrawingX();
+
+    wchar_t sym = clef->GetClefGlyph(staff->m_drawingNotationType);
+
+    if (sym == 0) {
+        clef->SetEmptyBB();
+        return;
+    }
+
+    y -= m_doc->GetDrawingUnit(staff->m_drawingStaffSize) * (staff->m_drawingLines - 1);
+
+    dc->StartGraphic(element, "", element->GetID());
+
+    this->DrawSmuflCode(dc, x, y, sym, glyphSize, false);
+
+    // Possibly draw enclosing brackets
+    this->DrawClefEnclosing(dc, clef, staff, sym, x, y);
+
+    dc->EndGraphic(element, this);
+}
+
 void View::DrawTabGrp(DeviceContext *dc, LayerElement *element, Layer *layer, Staff *staff, Measure *measure)
 {
     assert(dc);
@@ -40,10 +77,10 @@ void View::DrawTabGrp(DeviceContext *dc, LayerElement *element, Layer *layer, St
     TabGrp *tabGrp = dynamic_cast<TabGrp *>(element);
     assert(tabGrp);
 
-    dc->StartGraphic(tabGrp, "", tabGrp->GetUuid());
+    dc->StartGraphic(tabGrp, "", tabGrp->GetID());
 
     // Draw children (rhyhtm, notes)
-    DrawLayerChildren(dc, tabGrp, layer, staff, measure);
+    this->DrawLayerChildren(dc, tabGrp, layer, staff, measure);
 
     dc->EndGraphic(tabGrp, this);
 }
@@ -61,7 +98,7 @@ void View::DrawTabNote(DeviceContext *dc, LayerElement *element, Layer *layer, S
     // TabGrp *tabGrp = note->IsTabGrpNote();
     // assert(tabGrp);
 
-    dc->StartGraphic(note, "", note->GetUuid());
+    dc->StartGraphic(note, "", note->GetID());
 
     int x = element->GetDrawingX();
     int y = element->GetDrawingY();
@@ -88,7 +125,7 @@ void View::DrawTabNote(DeviceContext *dc, LayerElement *element, Layer *layer, S
         params.m_y -= (m_doc->GetTextGlyphHeight(L'0', &fretTxt, drawingCueSize) / 2);
 
         dc->StartText(ToDeviceContextX(params.m_x), ToDeviceContextY(params.m_y), HORIZONTALALIGNMENT_center);
-        DrawTextString(dc, fret, params);
+        this->DrawTextString(dc, fret, params);
         dc->EndText();
 
         dc->ResetFont();
@@ -107,12 +144,12 @@ void View::DrawTabNote(DeviceContext *dc, LayerElement *element, Layer *layer, S
         }
 
         dc->SetFont(m_doc->GetDrawingSmuflFont(glyphSize, false));
-        DrawSmuflString(dc, x, y, fret, HORIZONTALALIGNMENT_center, glyphSize);
+        this->DrawSmuflString(dc, x, y, fret, HORIZONTALALIGNMENT_center, glyphSize);
         dc->ResetFont();
     }
 
     // Draw children (nothing yet)
-    DrawLayerChildren(dc, note, layer, staff, measure);
+    this->DrawLayerChildren(dc, note, layer, staff, measure);
 
     dc->EndGraphic(note, this);
 }
@@ -130,47 +167,67 @@ void View::DrawTabDurSym(DeviceContext *dc, LayerElement *element, Layer *layer,
     TabGrp *tabGrp = dynamic_cast<TabGrp *>(tabDurSym->GetFirstAncestor(TABGRP));
     assert(tabGrp);
 
-    dc->StartGraphic(tabDurSym, "", tabDurSym->GetUuid());
+    dc->StartGraphic(tabDurSym, "", tabDurSym->GetID());
 
     int x = element->GetDrawingX();
     int y = element->GetDrawingY();
 
-    int drawingDur = (tabGrp->GetDurGes() != DURATION_NONE) ? tabGrp->GetActualDurGes() : tabGrp->GetActualDur();
-    int glyphSize = staff->GetDrawingStaffNotationSize();
+    const int glyphSize = staff->GetDrawingStaffNotationSize();
+    const int drawingDur = (tabGrp->GetDurGes() != DURATION_NONE) ? tabGrp->GetActualDurGes() : tabGrp->GetActualDur();
 
-    // We only need to draw the stems
-    // Do we also need to draw the dots?
-    if (tabGrp->IsInBeam()) {
-        const int height = m_doc->GetGlyphHeight(SMUFL_EBA8_luteDurationHalf, glyphSize, true);
-        DrawFilledRectangle(dc, x - m_doc->GetDrawingStemWidth(staff->m_drawingStaffSize) / 2, y,
-            x + m_doc->GetDrawingStemWidth(staff->m_drawingStaffSize) / 2, y + height);
-    }
-    else {
+    // For beam and guitar notation, stem are drawn through the child Stem
+    if (!tabGrp->IsInBeam() && !staff->IsTabGuitar()) {
         int symc = 0;
         switch (drawingDur) {
-            case DUR_2: symc = SMUFL_EBA7_luteDurationWhole; break;
-            case DUR_4: symc = SMUFL_EBA8_luteDurationHalf; break;
-            case DUR_8: symc = SMUFL_EBA9_luteDurationQuarter; break;
-            case DUR_16: symc = SMUFL_EBAA_luteDuration8th; break;
-            case DUR_32: symc = SMUFL_EBAB_luteDuration16th; break;
-            default: symc = SMUFL_EBA9_luteDurationQuarter;
+                // TODO SMUFL_EBA6_luteDurationDoubleWhole is defined by SMUFL but not yet implemented in Verovio
+                /* case DUR_1: symc = SMUFL_EBA6_luteDurationDoubleWhole; break; // 1 back flag */
+            case DUR_2: symc = SMUFL_EBA7_luteDurationWhole; break; // 0 flags
+            case DUR_4: symc = SMUFL_EBA8_luteDurationHalf; break; // 1 flag
+            case DUR_8: symc = SMUFL_EBA9_luteDurationQuarter; break; // 2 flags
+            case DUR_16: symc = SMUFL_EBAA_luteDuration8th; break; // 3 flags
+            case DUR_32: symc = SMUFL_EBAB_luteDuration16th; break; // 4 flags
+            case DUR_64: symc = SMUFL_EBAC_luteDuration32nd; break; // 5 flags
+            default: symc = SMUFL_EBA9_luteDurationQuarter; // 2 flags
         }
 
-        DrawSmuflCode(dc, x, y, symc, glyphSize, true);
+        this->DrawSmuflCode(dc, x, y, symc, glyphSize, true);
+    }
 
-        if (tabGrp->HasDots()) {
-            y += m_doc->GetDrawingUnit(glyphSize) * 0.5;
+    if (tabGrp->HasDots()) {
+        const int stemDirFactor = (tabDurSym->GetDrawingStemDir() == STEMDIRECTION_down) ? -1 : 1;
+        if (tabDurSym->GetDrawingStem()) {
+            y = tabDurSym->GetDrawingStem()->GetDrawingY();
+        }
+
+        int dotSize = 0;
+
+        if (tabGrp->IsInBeam() || staff->IsTabGuitar()) {
+            y += m_doc->GetDrawingUnit(glyphSize) * 0.5 * stemDirFactor;
             x += m_doc->GetDrawingUnit(glyphSize);
-            for (int i = 0; i < tabGrp->GetDots(); ++i) {
-                DrawDot(dc, x, y, glyphSize * 2 / 3);
-                // HARDCODED
-                x += m_doc->GetDrawingUnit(glyphSize) * 0.75;
-            }
+            dotSize = glyphSize * 2 / 3;
+        }
+        else {
+            // Vertical: the more flags the lower the dots
+            const int durfactor = DUR_64 - std::min(std::max(drawingDur, DUR_2), DUR_64) + 1;
+            static_assert(DUR_64 - DUR_2 + 1 == 6);
+            static_assert(DUR_64 - DUR_64 + 1 == 1);
+
+            y += m_doc->GetDrawingUnit(glyphSize) * stemDirFactor * durfactor * 2 / 5;
+
+            // Horizontal: allow for font width
+            x += m_doc->GetGlyphWidth(SMUFL_EBA9_luteDurationQuarter, glyphSize, false) / 2;
+            dotSize = glyphSize * 9 / 10;
+        }
+
+        for (int i = 0; i < tabGrp->GetDots(); ++i) {
+            this->DrawDot(dc, x, y, dotSize);
+            // HARDCODED
+            x += m_doc->GetDrawingUnit(glyphSize) * 0.75;
         }
     }
 
-    // Draw children (nothing yet)
-    DrawLayerChildren(dc, tabDurSym, layer, staff, measure);
+    // Draw children (stems)
+    this->DrawLayerChildren(dc, tabDurSym, layer, staff, measure);
 
     dc->EndGraphic(tabDurSym, this);
 }

@@ -11,7 +11,9 @@
 
 #include <assert.h>
 #include <cmath>
+#include <codecvt>
 #include <iostream>
+#include <locale>
 #include <sstream>
 #include <stdarg.h>
 #include <stdio.h>
@@ -38,15 +40,9 @@
 #define GIT_COMMIT "[undefined]"
 #endif
 
-#include "glyph.h"
-#include "smufl.h"
 #include "vrvdef.h"
 
 //----------------------------------------------------------------------------
-
-#include "checked.h"
-#include "pugixml.hpp"
-#include "unchecked.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -60,247 +56,6 @@
 #define STRING_FORMAT_MAX_LEN 2048
 
 namespace vrv {
-
-//----------------------------------------------------------------------------
-// Static members with some default values
-//----------------------------------------------------------------------------
-
-thread_local std::string Resources::s_path = "/usr/local/share/verovio";
-thread_local Resources::GlyphTextMap Resources::s_textFont;
-thread_local Resources::GlyphMap Resources::s_font;
-thread_local Resources::StyleAttributes Resources::s_currentStyle;
-const Resources::StyleAttributes Resources::k_defaultStyle{ data_FONTWEIGHT::FONTWEIGHT_normal,
-    data_FONTSTYLE::FONTSTYLE_normal };
-
-//----------------------------------------------------------------------------
-// Font related methods
-//----------------------------------------------------------------------------
-
-bool Resources::InitFonts()
-{
-    // We will need to rethink this for adding the option to add custom fonts
-    // Font Bravura first since it is expected to have always all symbols
-    if (!LoadFont("Bravura")) LogError("Bravura font could not be loaded.");
-    // The Leipzig as the default font
-    if (!LoadFont("Leipzig")) LogError("Leipzig font could not be loaded.");
-
-    if (s_font.size() < SMUFL_COUNT) {
-        LogError("Expected %d default SMuFL glyphs but could load only %d.", SMUFL_COUNT, s_font.size());
-        return false;
-    }
-
-    struct TextFontInfo_type {
-        const StyleAttributes m_style;
-        const std::string m_fileName;
-        bool m_isMandatory;
-    };
-
-    static const TextFontInfo_type textFontInfos[] = { { k_defaultStyle, "Times", true },
-        { k_defaultStyle, "VerovioText-1.0", true }, { { FONTWEIGHT_bold, FONTSTYLE_normal }, "Times-bold", false },
-        { { FONTWEIGHT_bold, FONTSTYLE_normal }, "VerovioText-1.0", false },
-        { { FONTWEIGHT_bold, FONTSTYLE_italic }, "Times-bold-italic", false },
-        { { FONTWEIGHT_bold, FONTSTYLE_italic }, "VerovioText-1.0", false },
-        { { FONTWEIGHT_normal, FONTSTYLE_italic }, "Times-italic", false },
-        { { FONTWEIGHT_normal, FONTSTYLE_italic }, "VerovioText-1.0", false } };
-
-    for (const auto &textFontInfo : textFontInfos) {
-        if (!InitTextFont(textFontInfo.m_fileName, textFontInfo.m_style) && textFontInfo.m_isMandatory) {
-            LogError("Text font could not be initialized.");
-            return false;
-        }
-    }
-
-    s_currentStyle = k_defaultStyle;
-
-    return true;
-}
-
-bool Resources::SetFont(const std::string &fontName)
-{
-    return LoadFont(fontName);
-}
-
-Glyph *Resources::GetGlyph(wchar_t smuflCode)
-{
-    if (!s_font.count(smuflCode)) return NULL;
-    return &s_font[smuflCode];
-}
-
-Glyph *Resources::GetGlyph(const std::string &smuflName)
-{
-    wchar_t code = GetGlyphCode(smuflName);
-    if (code == 0) return NULL;
-    return GetGlyph(code);
-}
-
-wchar_t Resources::GetGlyphCode(const std::string &smuflName)
-{
-    if (!s_smuflNames.count(smuflName)) return 0;
-    return s_smuflNames.at(smuflName);
-}
-
-void Resources::SelectTextFont(data_FONTWEIGHT fontWeight, data_FONTSTYLE fontStyle)
-{
-    if (fontWeight == FONTWEIGHT_NONE) {
-        fontWeight = FONTWEIGHT_normal;
-    }
-
-    if (fontStyle == FONTSTYLE_NONE) {
-        fontStyle = FONTSTYLE_normal;
-    }
-
-    s_currentStyle = { fontWeight, fontStyle };
-    if (s_textFont.count(s_currentStyle) == 0) {
-        LogWarning("Text font for style (%d, %d) is not loaded. Use default", fontWeight, fontStyle);
-        s_currentStyle = k_defaultStyle;
-    }
-}
-
-Glyph *Resources::GetTextGlyph(wchar_t code)
-{
-    GlyphMap *currentMap = &s_textFont[s_textFont.count(s_currentStyle) != 0 ? s_currentStyle : k_defaultStyle];
-
-    if (currentMap->count(code) == 0) {
-        return NULL;
-    }
-
-    return &currentMap->at(code);
-}
-
-bool Resources::LoadFont(const std::string &fontName)
-{
-    ::DIR *dir;
-    dirent *pdir;
-    std::string dirname = Resources::GetPath() + "/" + fontName;
-    dir = opendir(dirname.c_str());
-
-    if (!dir) {
-        LogError("Font directory '%s' cannot be read", dirname.c_str());
-        return false;
-    }
-
-    // First loop through the fontName directory and load each glyph
-    // Since the filename starts with the Unicode code, it is used
-    // to assign the glyph to the corresponding position in m_fonts
-    while ((pdir = readdir(dir))) {
-        if (strstr(pdir->d_name, ".xml")) {
-            // E.g, : E053-gClef8va.xml => strtol extracts E053 as hex
-            wchar_t smuflCode = (wchar_t)strtol(pdir->d_name, NULL, 16);
-            if (smuflCode == 0) {
-                LogError("Invalid SMUFL code (0)");
-                continue;
-            }
-            std::string codeStr = pdir->d_name;
-            codeStr = codeStr.substr(0, 4);
-            Glyph glyph(Resources::GetPath() + "/" + fontName + "/" + pdir->d_name, codeStr);
-            s_font[smuflCode] = glyph;
-        }
-    }
-
-    closedir(dir);
-
-    // Then load the bounding boxes (if bounding box file is provided)
-    pugi::xml_document doc;
-    std::string filename = Resources::GetPath() + "/" + fontName + ".xml";
-    pugi::xml_parse_result result = doc.load_file(filename.c_str());
-    if (!result) {
-        // File not found, default bounding boxes will be used
-        LogMessage("Font loaded without bounding boxes");
-        return true;
-    }
-    pugi::xml_node root = doc.first_child();
-    if (!root.attribute("units-per-em")) {
-        LogWarning("No units-per-em attribute in bouding box file");
-        return true;
-    }
-    const int unitsPerEm = root.attribute("units-per-em").as_int();
-    pugi::xml_node current;
-    for (current = root.child("g"); current; current = current.next_sibling("g")) {
-        Glyph *glyph = NULL;
-        if (current.attribute("c")) {
-            const wchar_t smuflCode = (wchar_t)strtol(current.attribute("c").value(), NULL, 16);
-            if (!s_font.count(smuflCode)) {
-                LogWarning("Glyph with code point U+%X not found.", smuflCode);
-                continue;
-            }
-            glyph = &s_font[smuflCode];
-            if (glyph->GetUnitsPerEm() != unitsPerEm * 10) {
-                LogWarning("Glyph and bounding box units-per-em for code point U+%X miss-match (bounding box: %d)",
-                    smuflCode, unitsPerEm);
-                continue;
-            }
-            float x = 0.0, y = 0.0, width = 0.0, height = 0.0;
-            // Not check for missing values...
-            if (current.attribute("x")) x = current.attribute("x").as_float();
-            if (current.attribute("y")) y = current.attribute("y").as_float();
-            if (current.attribute("w")) width = current.attribute("w").as_float();
-            if (current.attribute("h")) height = current.attribute("h").as_float();
-            glyph->SetBoundingBox(x, y, width, height);
-            if (current.attribute("h-a-x")) glyph->SetHorizAdvX(current.attribute("h-a-x").as_float());
-        }
-
-        if (!glyph) continue;
-
-        // load anchors
-        pugi::xml_node anchor;
-        for (anchor = current.child("a"); anchor; anchor = anchor.next_sibling("a")) {
-            if (anchor.attribute("n")) {
-                std::string name = std::string(anchor.attribute("n").value());
-                // No check for possible x and y missing attributes - not very safe.
-                glyph->SetAnchor(name, anchor.attribute("x").as_float(), anchor.attribute("y").as_float());
-            }
-        }
-    }
-
-    return true;
-}
-
-bool Resources::InitTextFont(const std::string &fontName, const StyleAttributes &style)
-{
-    // For the text font, we load the bounding boxes only
-    pugi::xml_document doc;
-    // For now, we have only Times bounding boxes for ASCII chars
-    // For any other char, we currently use 'o' bounding box
-    std::string filename = Resources::GetPath() + "/text/" + fontName + ".xml";
-    pugi::xml_parse_result result = doc.load_file(filename.c_str());
-    if (!result) {
-        // File not found, default bounding boxes will be used
-        LogMessage("Cannot load bounding boxes for text font '%s'", filename.c_str());
-        return false;
-    }
-    pugi::xml_node root = doc.first_child();
-    if (!root.attribute("units-per-em")) {
-        LogWarning("No units-per-em attribute in bouding box file");
-        return false;
-    }
-    const int unitsPerEm = root.attribute("units-per-em").as_int();
-    pugi::xml_node current;
-    if (s_textFont.count(style) == 0) {
-        s_textFont[style] = GlyphMap{};
-    }
-    GlyphMap &currentMap = s_textFont.at(style);
-    for (current = root.child("g"); current; current = current.next_sibling("g")) {
-        if (current.attribute("c")) {
-            wchar_t code = (wchar_t)strtol(current.attribute("c").value(), NULL, 16);
-            // We create a glyph with only the units per em which is the only info we need for
-            // the bounding boxes; path and codeStr will remain [unset]
-            Glyph glyph(unitsPerEm);
-            float x = 0.0, y = 0.0, width = 0.0, height = 0.0;
-            // Not check for missing values...
-            if (current.attribute("x")) x = current.attribute("x").as_float();
-            if (current.attribute("y")) y = current.attribute("y").as_float();
-            if (current.attribute("w")) width = current.attribute("w").as_float();
-            if (current.attribute("h")) height = current.attribute("h").as_float();
-            glyph.SetBoundingBox(x, y, width, height);
-            if (current.attribute("h-a-x")) glyph.SetHorizAdvX(current.attribute("h-a-x").as_float());
-            if (currentMap.count(code) > 0) {
-                LogDebug("Redefining %d with %s", code, fontName.c_str());
-            }
-            currentMap[code] = glyph;
-        }
-    }
-    return true;
-}
 
 //----------------------------------------------------------------------------
 // Logging related methods
@@ -465,32 +220,25 @@ bool AreEqual(double dFirstVal, double dSecondVal)
     return std::fabs(dFirstVal - dSecondVal) < 1E-3;
 }
 
-std::string ExtractUuidFragment(std::string refUuid)
+std::string ExtractIDFragment(std::string refID)
 {
-    size_t pos = refUuid.find_last_of("#");
-    if ((pos != std::string::npos) && (pos < refUuid.length() - 1)) {
-        refUuid = refUuid.substr(pos + 1);
+    size_t pos = refID.find_last_of("#");
+    if ((pos != std::string::npos) && (pos < refID.length() - 1)) {
+        refID = refID.substr(pos + 1);
     }
-    return refUuid;
+    return refID;
 }
 
 std::string UTF16to8(const std::wstring &in)
 {
-    std::string out;
-
-    utf8::utf16to8(in.begin(), in.end(), std::back_inserter(out));
-
-    return out;
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> strCnv;
+    return strCnv.to_bytes(in);
 }
 
 std::wstring UTF8to16(const std::string &in)
 {
-    std::wstring out;
-    std::stringstream sin(in.c_str());
-
-    utf8::utf8to16(std::istreambuf_iterator<char>(sin), std::istreambuf_iterator<char>(), std::back_inserter(out));
-
-    return out;
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> strCnv;
+    return strCnv.from_bytes(in);
 }
 
 std::string GetFileVersion(int vmaj, int vmin, int vrev)
@@ -522,7 +270,7 @@ std::string GetVersion()
 
 static const std::string base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-std::string BaseEncodeInt(int value, int base)
+std::string BaseEncodeInt(unsigned int value, unsigned int base)
 {
     assert(base > 10);
     assert(base < 63);

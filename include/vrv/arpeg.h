@@ -51,22 +51,38 @@ public:
     ///@}
 
     /**
+     * Get all notes of the arpeggio
+     */
+    ///@{
+    std::set<Note *> GetNotes();
+    std::set<const Note *> GetNotes() const;
+    ///@}
+
+    /**
      * Set the top and bottom note of the arpeg.
-     * Pointers will be NULL if resovling fails (e.g., pointing to one single note)
+     * Pointers will be NULL if resolving fails (e.g., pointing to one single note)
      */
     void GetDrawingTopBottomNotes(Note *&top, Note *&bottom);
 
     /**
      * Get cross staff of the front element if all elements of arpeggio are cross-staff
      */
+    ///@{
     Staff *GetCrossStaff();
+    const Staff *GetCrossStaff() const;
+    ///@}
 
     /**
      * @name Getter to interfaces
      */
     ///@{
-    PlistInterface *GetPlistInterface() override { return dynamic_cast<PlistInterface *>(this); }
-    TimePointInterface *GetTimePointInterface() override { return dynamic_cast<TimePointInterface *>(this); }
+    PlistInterface *GetPlistInterface() override { return vrv_cast<PlistInterface *>(this); }
+    const PlistInterface *GetPlistInterface() const override { return vrv_cast<const PlistInterface *>(this); }
+    TimePointInterface *GetTimePointInterface() override { return vrv_cast<TimePointInterface *>(this); }
+    const TimePointInterface *GetTimePointInterface() const override
+    {
+        return vrv_cast<const TimePointInterface *>(this);
+    }
     ////@}
 
     /**
@@ -80,7 +96,7 @@ public:
     /**
      * Custom method for @plist validation
      */
-    bool IsValidRef(Object *ref) const override;
+    bool IsValidRef(const Object *ref) const override;
 
     //----------//
     // Functors //
@@ -99,9 +115,19 @@ public:
     ///@}
 
     /**
-     * See Object::ResetDrawing
+     * See Object::ResetData
      */
-    int ResetDrawing(FunctorParams *functorParams) override;
+    int ResetData(FunctorParams *functorParams) override;
+
+    /**
+     * See Object::CacheHorizontalLayout
+     */
+    int CacheHorizontalLayout(FunctorParams *functorParams) override;
+
+    /**
+     * See Object::InitMIDI
+     */
+    int InitMIDI(FunctorParams *functorParams) override;
 
 protected:
     //
@@ -116,6 +142,11 @@ private:
      * (See View::DrawArpeg that sets the FloatingPositioner)
      */
     int m_drawingXRel;
+
+    /**
+     * The cached value for m_drawingXRel for caching horizontal layout
+     */
+    int m_cachedXRel;
 };
 
 } // namespace vrv

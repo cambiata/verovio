@@ -31,10 +31,10 @@ static const ClassRegistrar<Ending> s_factory("ending", ENDING);
 
 Ending::Ending() : SystemElement(ENDING, "ending-"), SystemMilestoneInterface(), AttLineRend(), AttNNumberLike()
 {
-    RegisterAttClass(ATT_LINEREND);
-    RegisterAttClass(ATT_NINTEGER);
+    this->RegisterAttClass(ATT_LINEREND);
+    this->RegisterAttClass(ATT_NINTEGER);
 
-    Reset();
+    this->Reset();
 }
 
 Ending::~Ending() {}
@@ -43,8 +43,8 @@ void Ending::Reset()
 {
     SystemElement::Reset();
     SystemMilestoneInterface::Reset();
-    ResetLineRend();
-    ResetNNumberLike();
+    this->ResetLineRend();
+    this->ResetNNumberLike();
 }
 
 bool Ending::IsSupportedChild(Object *child)
@@ -111,11 +111,11 @@ int Ending::PrepareMilestones(FunctorParams *functorParams)
     return FUNCTOR_CONTINUE;
 }
 
-int Ending::ResetDrawing(FunctorParams *functorParams)
+int Ending::ResetData(FunctorParams *functorParams)
 {
-    FloatingObject::ResetDrawing(functorParams);
+    FloatingObject::ResetData(functorParams);
 
-    this->SystemMilestoneInterface::InterfaceResetDrawing(functorParams);
+    this->SystemMilestoneInterface::InterfaceResetData(functorParams);
 
     return FUNCTOR_CONTINUE;
 }
