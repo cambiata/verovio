@@ -1,0 +1,37 @@
+
+Kompilera:
+
+> cd cambiata-verovio
+> cd tools
+> cmake ../cmake
+> make -j 8
+
+Installera executable:
+
+> sudo make install
+
+Testa executable:
+
+> verovio -v
+
+Fixa i ordning emscripten:
+
+> export PATH="~/emsdk/upstream/emscripten:$PATH"
+> cd ~/emsdk
+> source ./emsdk_env.sh
+
+
+Kör emscripten:
+
+> cd cambiata-verovio
+> cd emscripten
+> ./buildToolkit -H
+
+
+> verovio -t timemap -o ../jonas/test.json ../jonas/EmptyBar.
+
+verovio -t timemap -o jonas/test.3.9.json jonas/test.xml
+verovio -t timemap -o jonas/reps.3.9.json jonas/reps.xml
+verovio -t timemap -o jonas/MultibarRest.3.9.json jonas/MultibarRest.xml
+verovio -t timemap -o jonas/EmtpyBar.3.9.json jonas/EmptyBar.xml
+verovio -t timemap -o jonas/Moses.3.9.json jonas/Moses.xml
